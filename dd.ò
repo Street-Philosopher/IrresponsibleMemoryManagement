@@ -1,0 +1,136 @@
+little endian
+64kB ram
+//			0000-3FFF: fixed rom
+//			4000-7FFF: banked rom
+//			8000-EFFF: banked ram
+//			F000-FEFF: fixed ram
+0000-7FFF: rom
+8000-FEFF: ram
+FF00-FFFF: stack
+# you can write to rom, the difference is that it's where programs are loaded
+# it's also a way to keep things tidier, saying "hey programs should go here and other stuff there"
+
+registers (8b):
+A
+B
+C
+D
+special registers:
+H  (8b) \__ HL (16b)
+L  (8b) /
+F   =>  000000cz
+PC (16b)
+SP (8b)
+
+
+conditions:
+0: none
+1: zero
+2: carry
+3: not zero
+
+
+display:
+256x256
+64kB VRAM
+0x0000-0x2000: screen data (one bit per pixel, with gb-like "squares")
+0xFF00-0xFFFF: screen settings
+# il resto è praticamente ram gratis
+
+
+cram:
+"control ram": contains settings for the computer
+accessed using ldh instruction
+256 bytes
+//			00: rom bank / ram bank (4bit each)
+80: input (one bit per key)
+F0: cycle counter (low)		\__ when this reaches 0000 the screen updates
+F1: cycle coutner (high)	/
+
+
+
+
+instructions:
+#sys
+# 30 instructions
+00000000 => nop
+00000001 => stop
+000001xx => jp   [cond],&imm
+000010xx => call [cond],&imm
+000011xx => ret  [cond]
+00011000 => push HL
+00011001 => push A
+00011010 => pop  HL
+00011011 => pop  A
+000111xx => call [cond],(hl)
+011100xx => jp   [cond],(hl)
+
+#operations
+# 48 instructions
+001000xx => add A,reg \
+001001xx => sub A,reg  \
+001010xx => and A,reg   |---> operation on A and given register, result stored in A
+001011xx => xor A,reg  /
+001100xx => or  A,reg /
+001101xx => inc reg
+001110xx => dec reg
+001111xx => inc hl / inc sp / dec hl / dec sp
+011101xx => not reg
+011110xx => ror reg
+011111xx => rol reg
+10000000 => cmp A,%imm
+100000xx => cmp A,reg #sets z if equal, c if A is smaller
+00010100 => add HL,AB
+101010xx => adc A,reg
+
+#bit operations
+10010xxx => bit x,A
+10011xxx => res x,A
+10100xxx => set x,A
+10111xxx => flag x	#come bit, ma per il registro delle flags. flag 0 è inutile bisogna dargli un altro uso
+
+#loads
+# 45 instructions
+0100xxyy => ld  reg,reg
+010100xx => ld  reg,%imm
+010101xx => ld  reg,(hl)
+010110xx => ld  (hl),reg
+01011100 => ld  hl,%imm
+011000xx => ld  (&imm),reg
+011001xx => ld  reg,(&imm)
+011010xx => ldi reg,(hl)
+011011xx => ldi (hl),reg
+00010001 => ld A,H
+00010010 => ld A,L
+01011110 => ld H,A
+01011111 => ld L,A
+100001xx => ldd reg,(HL)
+100010xx => ldd (HL),reg
+
+#video instructions
+101011xx => stv (&addr),reg
+101100xx => ldv reg,(&addr)
+10110100 => stv (HL),A
+10110101 => stv (HL+),A
+10110110 => stv (HL-),A
+10110111 => ldv A,(HL)
+
+#unused (82)
+0000001x
+00010000
+00010011
+00010101
+0001011x
+01011101
+100011xx
+10110100+
+
+forse:
+altre flags
+add, sub etc con %imm
+ldv, stv con (HL[+/-])
+piu operazioni su hl
+AB, altri registri grossi
+ldh, other settings
+banking?
+modo rapido per copiare tiles in vram da indirizzo a indirizzo
