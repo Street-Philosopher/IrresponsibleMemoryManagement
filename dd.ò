@@ -35,6 +35,7 @@ display:
 64kB VRAM
 0x0000-0x2000: screen data (one bit per pixel, with gb-like "squares")
 0xFF00-0xFFFF: screen settings
+updated every 65536 clock cycles
 # il resto è praticamente ram gratis
 
 
@@ -124,6 +125,8 @@ instructions:
 01011101
 100011xx
 10110100+
+
+
 
 forse:
 altre flags

@@ -1,2 +1,5 @@
 assembler/__pycache__
 main
+main.bat
+saveStates
+.vscode

@@ -10,8 +10,6 @@
 #include "cramConstants.h"
 
 
-//todo: cram
-//forse: banking
 
 using Debugger::IsBreakpoint;
 using Debugger::DebugInit;

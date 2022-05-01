@@ -1,6 +1,7 @@
 #include "debugger.h"
 #include "util.h"
 
+#include <filesystem>		//to check/create directories
 #include <sstream>
 #include <list>
 
@@ -57,6 +58,13 @@ int SaveState(CPU_T* _cpu, int num);
 
 
 void Debugger::DebugInit(CPU_T* CPU) {
+    
+	//if the folder doesn't exist, create it
+	namespace fs = std::filesystem;
+	if (!fs::is_directory("saveStates") || !fs::exists("saveStates")) {
+		fs::create_directory("saveStates");
+	}
+
 	//save state to be used in the reset command
 	SaveState(CPU, -1);
 }
