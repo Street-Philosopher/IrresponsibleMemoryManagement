@@ -32,7 +32,9 @@ using Debugger::printdebug;
 CPU_T CPU = CPU_T();
 
 void mainloop();
-int main(int argc, char *argv[]) {
+int main(int argc, char* argv[]) {
+
+	cls();
 
 	if (argc >= 2) {
 		if (LoadProgramToMemory(argv[1], CPU.base) == false) {
@@ -42,7 +44,7 @@ int main(int argc, char *argv[]) {
 	}
 
 	graphicsinit();
-	updatescreen(&CPU);
+	updatescreen(&CPU);	//if we don't do this the screen will be empty, not even black, which looks bad
 
 	//initialises debug screen
 	DebugInit(&CPU);
@@ -58,8 +60,8 @@ int main(int argc, char *argv[]) {
 }
 //END MAIN PROGRAM
 
-#include <chrono>
-typedef std::chrono::high_resolution_clock Clock;
+//#include <chrono>
+//typedef std::chrono::high_resolution_clock Clock;
 void mainloop() {
 	
 // t1 = Clock::now();

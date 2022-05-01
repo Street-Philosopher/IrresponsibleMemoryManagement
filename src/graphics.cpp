@@ -1,9 +1,5 @@
-//this is fine
-
-//btw because of this i cannot debug ffs
-
-#include "SFML/Graphics.hpp"
-#include "SFML/Window.hpp"
+#include <SFML/Graphics.hpp>
+#include <SFML/Window.hpp>
 
 #include "types.h"
 #include "cramConstants.h"

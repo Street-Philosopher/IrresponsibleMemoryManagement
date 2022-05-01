@@ -238,12 +238,14 @@ try:
 
 		#if there is a label for that
 		addr = labels[allbytes[i]]
-		allbytes[i] 	 = addr  % 0x100	#convert label to address and change bytes
+		allbytes[i]     = addr  % 0x100	#convert label to address and change bytes
 		allbytes[i + 1] = addr // 0x100
 	#END LABEL FOR
 
 	if valid is True:
-		out = open("program", "wb")
+		from pathlib import Path
+		filename = Path(PATH).stem + ".bin"
+		out = open(filename, "wb")
 		out.write(bytes(allbytes))
 		out.close()
 		print("success!")
