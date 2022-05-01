@@ -216,9 +216,9 @@ void Debugger::printdebug(CPU_T* _cpu) {
 					<< "help command        - get a descritpion of the syntax of the given command" << "\n"
 //					<< "options             - list all options" << "\n"
 
- 					<< "step / s            - execute the next instruction" << "\n"
- 					<< "next / n            - execute the next instruction skipping over function calls" << "\n"
- 					<< "finish / f          - run until the end of the current function" << "\n"
+ 					<< "step                - execute the next instruction (can be shortened to 's')" << "\n"
+ 					<< "next                - execute the next instruction skipping over function calls (short: 'n')" << "\n"
+ 					<< "finish              - run until the end of the current function (short: 'f')" << "\n"
 
 					<< "cc                  - print the value of the counter" << "\n"
 					<< "cc reset            - print the value of the counter, then reset it" << "\n"
@@ -226,14 +226,14 @@ void Debugger::printdebug(CPU_T* _cpu) {
 //					<< "set name val        - set the given option to the given value" << "\n"
 
 
-					<< "m [v/c] addr        - print the memory value at \"addr\"" << "\n"
-					<< "m [v/c] add1-add2   - print the values from \"add1\" to \"add2\"" << "\n"
+					<< "m [v/c] ADDR        - print the memory value at \"addr\"" << "\n"
+					<< "m [v/c] ADD1-ADD2   - print the values from \"add1\" to \"add2\"" << "\n"
 
-					<< "w [v/c] addr val    - write \"val\" to \"addr\"" << "\n"
+					<< "w [v/c] ADDR VAL    - write \"val\" to \"addr\"" << "\n"
 
-					<< "reg name val        - load \"val\" in the given register" << "\n"
+					<< "reg NAME VAL        - load \"val\" in the given register" << "\n"
 
-					<< "b [v/c] [mode] addr - set a breakpoint at \"addr\" (the mode is -e by default)" << "\n"
+					<< "b [v/c] [mode] ADDR - set a breakpoint at \"addr\" (the mode is -e by default)" << "\n"
 						<< "                modes:" << "\n"
 						<< "                	'-e'  => on execution (default)" << "\n"
 						<< "                	'-r'  => on read" << "\n"
@@ -242,12 +242,14 @@ void Debugger::printdebug(CPU_T* _cpu) {
 						<< "                	'-d'  => delete breakpoint" << "\n"
 						<< "                	'-da' => delete all breakpoints" << "\n"
 
-					<< "jp addr             - jump to the given address" << "\n"
+					<< "jp ADDR             - jump to the given address" << "\n"
 
-					<< "dis addr            - disassemble the opcode at the given address" << "\n"
+					<< "dis ADDR            - disassemble the opcode at the given address" << "\n"
 					
-					<< "ss num              - saves the state with the given number (0-9)" << "\n"
-					<< "ls num              - loads the state with the given number (0-9)" << "\n"
+					<< "ss NUM              - saves the state with the given number (0-9)" << "\n"
+					<< "ls NUM              - loads the state with the given number (0-9)" << "\n"
+
+					<< "load FIL           - loads the file's binary contents to memory" << "\n"
 
 					<< "update              - force a screen update" << "\n"
 					<< "cls                 - clear the console" << "\n"
@@ -645,6 +647,16 @@ void Debugger::printdebug(CPU_T* _cpu) {
 			std::cout << ByteToHex(_cpu->ReadMemory(addr)) << " => " << disassembly << "\n";
 		}
 
+		//load rom
+		else if (tokens.at(0) == "load") {
+			if (LoadProgramToMemory(tokens.at(1), _cpu->base) == true) {
+				cout << "success!";
+				_cpu->reset();
+				goto updateDebugInfo;
+			} else {
+				cout << "could not load the file";
+			}
+		}
 		//load state
 		else if (tokens.at(0) == "ls") {
 			//get first digit from char
@@ -653,7 +665,7 @@ void Debugger::printdebug(CPU_T* _cpu) {
 			try
 			{
 				switch (stoi(tokens.at(1))) {
-										case 0:
+					case 0:
 					case 1:
 					case 2:
 					case 3:
@@ -691,7 +703,7 @@ void Debugger::printdebug(CPU_T* _cpu) {
 			try
 			{
 				switch (stoi(tokens.at(1))) {
-										case 0:
+					case 0:
 					case 1:
 					case 2:
 					case 3:

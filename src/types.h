@@ -69,6 +69,7 @@ class CPU_T {
 	void SetFlag(int num, bool value);
 
 	void init();
+	void reset();
 
 };
 

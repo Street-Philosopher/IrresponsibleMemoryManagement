@@ -32,12 +32,13 @@ using Debugger::printdebug;
 CPU_T CPU = CPU_T();
 
 void mainloop();
-int main() {
+int main(int argc, char *argv[]) {
 
-	//this is not necessary, but at least you'll have something to start with and won't have to spell the program yourself
-	if (LoadProgramToMemory("programs/pong", CPU.base) == false) {
-		std::cout << "there was an error loading the program" << std::endl;
-		getchar();
+	if (argc >= 2) {
+		if (LoadProgramToMemory(argv[1], CPU.base) == false) {
+			std::cout << "there was an error loading the program" << std::endl;
+			getchar();
+		}
 	}
 
 	graphicsinit();

@@ -54,8 +54,32 @@ void CPU_T::SetFlag(int num, bool value) {
 
 //constructor
 CPU_T::CPU_T() {
+
+/*
+	base = (pt)malloc(0x10000);
+	vramBase = (pt)malloc(0x10000);
+	cramBase = (pt)malloc(0x100);
+*/
 	
 	init();
+}
+CPU_T::~CPU_T() {
+/*
+	//no, this doesn't cause a memory leak
+	free(base);
+	free(vramBase);
+	free(cramBase);
+*/
+}
+void CPU_T::init() {
+
+	SP = 0xFF;
+	PC = 0x0000;
+
+	//TODO: set initial cram values
+	// cycle counter (for display)
+	cramBase[0xF0] = 0;
+	cramBase[0xF1] = 0;
 
 /*
 	//not necessary, but having all set to zero is boring
@@ -70,28 +94,8 @@ CPU_T::CPU_T() {
 	D  = rand() % 256;
 	HL = rand() & 0xFFFF;
 }
-CPU_T::~CPU_T() {
-/*
-	//no, this doesn't cause a memory leak
-	free(base);
-	free(vramBase);
-	free(cramBase);
-*/
-}
-void CPU_T::init() {
-/*
-	base = (pt)malloc(0x10000);
-	vramBase = (pt)malloc(0x10000);
-	cramBase = (pt)malloc(0x100);
-*/
-
-	SP = 0xFF;
-	PC = 0x0000;
-
-	//TODO: set initial cram values
-	// cycle counter (for display)
-	cramBase[0xF0] = 0;
-	cramBase[0xF1] = 0;
+void CPU_T::reset() {
+	init();
 }
 
 
