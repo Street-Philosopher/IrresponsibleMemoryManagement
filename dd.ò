@@ -18,7 +18,7 @@ D
 special registers:
 H  (8b) \__ HL (16b)
 L  (8b) /
-F   =>  000000cz
+F   =>  0000pscz (Parity, Sign, Carry, Zero)
 PC (16b)
 SP (8b)
 
