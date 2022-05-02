@@ -257,7 +257,7 @@ void Debugger::printdebug(CPU_T* _cpu) {
 					<< "ss NUM              - saves the state with the given number (0-9)" << "\n"
 					<< "ls NUM              - loads the state with the given number (0-9)" << "\n"
 
-					<< "load FIL           - loads the file's binary contents to memory" << "\n"
+					<< "load FILE           - loads the file's binary contents to memory" << "\n"
 
 					<< "update              - force a screen update" << "\n"
 					<< "cls                 - clear the console" << "\n"
@@ -660,6 +660,7 @@ void Debugger::printdebug(CPU_T* _cpu) {
 			if (LoadProgramToMemory(tokens.at(1), _cpu->base) == true) {
 				cout << "success!";
 				_cpu->reset();
+				SaveState(_cpu, -1);	//for the reset command
 				goto updateDebugInfo;
 			} else {
 				cout << "could not load the file";
