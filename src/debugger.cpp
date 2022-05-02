@@ -673,23 +673,8 @@ void Debugger::printdebug(CPU_T* _cpu) {
 			//it's in a try because stoi can cause exceptions if the value received is bad
 			try
 			{
-				switch (stoi(tokens.at(1))) {
-					case 0:
-					case 1:
-					case 2:
-					case 3:
-					case 4:
-					case 5:
-					case 6:
-					case 7:
-					case 8:
-					case 9:
-						num = stoi(tokens.at(1));
-						break;
-					//we only accept values 0-9
-					default:
-						throw exception();
-				}
+				num = stoi(tokens.at(1));
+				if (num > 9 || num < 0) throw exception();
 			}
 			catch(exception) {
 				cout << "invalid number for state. expected a 0-9 value";
@@ -711,23 +696,8 @@ void Debugger::printdebug(CPU_T* _cpu) {
 			//it's in a try because stoi can cause exceptions if the value received is bad
 			try
 			{
-				switch (stoi(tokens.at(1))) {
-					case 0:
-					case 1:
-					case 2:
-					case 3:
-					case 4:
-					case 5:
-					case 6:
-					case 7:
-					case 8:
-					case 9:
-						num = stoi(tokens.at(1));
-						break;
-					//we only accept values 0-9
-					default:
-						throw exception();
-				}
+				num = stoi(tokens.at(1));
+				if (num > 9 || num < 0) throw exception();
 			}
 			catch(exception) {
 				cout << "invalid number for state. expected a 0-9 value";
