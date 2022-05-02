@@ -9,7 +9,7 @@ A few important things:
 * has four 8bit and one 16bit general purpose registers;
 * each opcode is a byte long, excluding the parameters it may have;
 * the display is 256x256, and can only show black and white. It doesn't have a set refresh rate, but refreshes every 65536 instructions are executed;
-* it has a built in [debugger](#debugger), based on console commands. To use it just press esc while playing, and you can use it to do many cool things like reading/writing RAM, breakpoints, savestates etc.
+* it has a built in [debugger](#debugger), based on console commands. To use it just press ESC while playing, and you can use it to do many cool things like reading/writing RAM, breakpoints, savestates etc.
 
 ## Assembler
 The assembler is written in Python. Again, the full specification for the Assembly language is in the [dd.ò](dd.ò) file.
