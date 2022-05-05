@@ -19,11 +19,13 @@ It supports all the instructions, org and db directives (org ADDR, db VALUES. db
 
 ## Debugger
 To access the debugger press ESC in the window. It will halt execution, and will open a terminal window where you can see information on the registers and memory (the memory shown is the one in front of the Program Counter, so the one that's about to be executed), and can execute commands.
+
+You can single step by pressing enter without writing any command. Otherwise the commands are:
 * help: lists all commands
 * cls: clears the console screen
 * update: forces a display update
-* step: single steps to the next instruction (can also be written as simply "s")
-* next: like step, but it will skip over function calls (can be written as "n")
+* step: single steps to the next instruction (can also be written as simply "s"). After executing this, stepping by pressing enter will repeat this instruction.
+* next: like step, but it will skip over function calls (can be written as "n"). After executing this, stepping by pressing enter will repeat this instruction.
 * finish: will run until the program exits the current function (shortened as "f")
 * cc: displays a counter. this counter is increased every CPU cycle. can be reset with "cc reset"
 * m ADDR: view the memory at the given address. if the parameter "v" is put before the address it will be read from VRAM, if the parameter "c" it will be read from CRAM and if none it will be read from normal RAM. it also supports a range of addresses, if written in the form "ADDR1-ADDR2"
