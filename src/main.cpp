@@ -518,14 +518,16 @@ void CPU_T::exec(byte opcode) {
 			case 0b00011000:					//push HL
 				push(HL);
 				break;
-			case 0b00011001:					//push A
+			case 0b00011001:					//push AB
 				w1 = B + (0x100 * A);
 				push(w1);
 				break;
 			case 0b00011010:					//pop HL
 				pop(&HL);
 				break;
-			case 0b00011011:					//pop A
+			case 0b00011011:					//pop AB
+				//TODO: this is bad
+				throw;
 				pop(&A);
 				break;
 

@@ -27,7 +27,7 @@ void cls() {
 	#ifdef __linux__
 	system("clear");
 	#elif _WIN32
-	system("cls")
+	system("cls");
 	#endif
 	// cout << "\033[2J\033[0;0H";
 	// cout.flush();

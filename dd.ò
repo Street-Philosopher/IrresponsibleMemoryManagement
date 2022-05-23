@@ -50,89 +50,104 @@ F1: cycle coutner (high)	/
 
 
 
-#TODO: rewrite this section, there's too many inconsistencies
+#TODO: check for consistency between these and mainloop in main.cpp
 instructions:
-#sys
+#sys instructions
 00000000 => nop
 00000001 => stop
 00000010 => halt
-000001xx => jp   [cond],&imm
-000010xx => call [cond],&imm
-000011xx => ret  [cond]
+000001xx => jp   [condition] &imm
+011100xx => jp   [condition] (HL)
+000010xx => call [condition] &imm
+000111xx => call [condition] (HL)
+000011xx => ret  [condition]
 00011000 => push HL
-00011001 => push A
-00011010 => pop  HL
-00011011 => pop  A
-000111xx => call [cond],(hl)
-011100xx => jp   [cond],(hl)
+00011001 => push AB
+00011010 => pop HL
+00011011 => pop AB
 
-#operations
-001000xx => add A,reg \
-001001xx => sub A,reg  \
-001010xx => and A,reg   |---> operation on A and given register, result stored in A
-001011xx => xor A,reg  /
-001100xx => or  A,reg /
+#ALU instructions
+00010011 => add A,%imm
+00010100 => add HL,AB
+00010101 => sub A,%imm
+001000xx => add A,reg
+001001xx => sub A,reg
+001010xx => and A,reg
+001011xx => xor A,reg
+001100xx => or  A,reg
 001101xx => inc reg
 001110xx => dec reg
-001111xx => inc hl / inc sp / dec hl / dec sp
+00111100 => inc HL
+00111101 => inc SP
+00111110 => dec HL
+00111111 => dec SP
 011101xx => not reg
 011110xx => ror reg
 011111xx => rol reg
 10000000 => cmp A,%imm
-100000xx => cmp A,reg #sets z if equal, c if A is smaller
-00010100 => add HL,AB
+100000xx => cmp A,reg
 101010xx => adc A,reg
-00010011 => add A,%imm
-00010101
-
-#bit operations
-10010xxx => bit x,A
-10011xxx => res x,A
-10100xxx => set x,A
-10111xxx => flag x	#like bit x, but for F register. flag 0 and flag 1 don't exist
+11000000 => add HL,&imm
+11000001 => sub HL,&imm
 
 #loads
-0100xxyy => ld  reg,reg
-010100xx => ld  reg,%imm
-010101xx => ld  reg,(hl)
-010110xx => ld  (hl),reg
-01011100 => ld  hl,%imm
-011000xx => ld  (&imm),reg
-011001xx => ld  reg,(&imm)
-011010xx => ldi reg,(hl)
-011011xx => ldi (hl),reg
-00010001 => ld A,H
-00010010 => ld A,L
+0100xxyy => ld reg2,reg1
+010100xx => ld reg,%imm
+010101xx => ld reg,(HL)
+010110xx => ld (HL),reg
+011000xx => ld (&imm),reg
+011001xx => ld reg,(&imm)
+01011100 => ld HL,&imm
+01011101 => ld HL,AB
+11000010 => ld AB,HL
 01011110 => ld H,A
+00010001 => ld A,H
 01011111 => ld L,A
+00010010 => ld A,L
+011010xx => ldi reg,(HL)
+011011xx => ldi (HL),reg
 100001xx => ldd reg,(HL)
 100010xx => ldd (HL),reg
+00010110 => ldh (%imm),A
+00010111 => ldh A,(%imm)
 
-#video instructions
-101011xx => stv (&addr),reg
-101100xx => ldv reg,(&addr)
+#bitwise
+10010xxx => bit x
+10011xxx => res x
+10100xxx => set x
+10111xxx => flag x
+
+#vram
+101011xx => stv (&imm),reg
+101100xx => ldv reg,(&imm)
 10110100 => stv (HL),A
 10110101 => stv (HL+),A
 10110110 => stv (HL-),A
 10110111 => ldv A,(HL)
+10001100 => ccv (HL),(&imm)
+10001101 => ccr (HL),(&imm)
+10001110 => ccv (HL),(AB)
+10001111 => ccr (HL),(AB)
 
-#unused (84)
-1011100x
+#unused (71)
 00000011
 00010000
-0001011x
-01011101
-100011xx
-10110100+
+00101000
+00110000
+01000000
+01000101
+01001010
+01001111
+1011100x
+11000011+
 
 
 
-forse:
-altre flags
-add, sub etc con %imm
-ldv, stv con (HL[+/-])
-piu operazioni su hl
-AB, altri registri grossi
-ldh, other settings
+todo:
+more flags
+add, sub etc with %imm
+more operations on hl
+AB, more big registers
+other cram settings
+ldv A,(HL+/-)
 banking?
-modo rapido per copiare tiles in vram da indirizzo a indirizzo
