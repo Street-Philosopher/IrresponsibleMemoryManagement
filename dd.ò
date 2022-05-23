@@ -50,12 +50,12 @@ F1: cycle coutner (high)	/
 
 
 
-
+#TODO: rewrite this section, there's too many inconsistencies
 instructions:
 #sys
-# 30 instructions
 00000000 => nop
 00000001 => stop
+00000010 => halt
 000001xx => jp   [cond],&imm
 000010xx => call [cond],&imm
 000011xx => ret  [cond]
@@ -67,7 +67,6 @@ instructions:
 011100xx => jp   [cond],(hl)
 
 #operations
-# 48 instructions
 001000xx => add A,reg \
 001001xx => sub A,reg  \
 001010xx => and A,reg   |---> operation on A and given register, result stored in A
@@ -83,15 +82,16 @@ instructions:
 100000xx => cmp A,reg #sets z if equal, c if A is smaller
 00010100 => add HL,AB
 101010xx => adc A,reg
+00010011 => add A,%imm
+00010101
 
 #bit operations
 10010xxx => bit x,A
 10011xxx => res x,A
 10100xxx => set x,A
-10111xxx => flag x	#come bit, ma per il registro delle flags. flag 0 è inutile bisogna dargli un altro uso
+10111xxx => flag x	#like bit x, but for F register. flag 0 and flag 1 don't exist
 
 #loads
-# 45 instructions
 0100xxyy => ld  reg,reg
 010100xx => ld  reg,%imm
 010101xx => ld  reg,(hl)
@@ -116,11 +116,10 @@ instructions:
 10110110 => stv (HL-),A
 10110111 => ldv A,(HL)
 
-#unused (82)
-0000001x
+#unused (84)
+1011100x
+00000011
 00010000
-00010011
-00010101
 0001011x
 01011101
 100011xx

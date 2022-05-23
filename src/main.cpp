@@ -565,7 +565,7 @@ void CPU_T::exec(byte opcode) {
 				subhl(w1);
 				break;
 			//and A,reg
-			case 0b00101000:
+			// case 0b00101000:
 			case 0b00101001:
 			case 0b00101010:
 			case 0b00101011:
@@ -579,7 +579,7 @@ void CPU_T::exec(byte opcode) {
 				Xor(&A, GetRegPtr(opcode & 0b11));
 				break;
 			//or  A,reg
-			case 0b00110000:
+			// case 0b00110000:
 			case 0b00110001:
 			case 0b00110010:
 			case 0b00110011:
@@ -693,8 +693,8 @@ void CPU_T::exec(byte opcode) {
 				break;
 			
 			//flag x
-			case 0b10111000:
-			case 0b10111001:
+			// case 0b10111000:
+			// case 0b10111001:
 			case 0b10111010:
 			case 0b10111011:
 			case 0b10111100:

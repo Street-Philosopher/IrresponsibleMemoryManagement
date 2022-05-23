@@ -24,8 +24,13 @@ char digits[] = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C
 
 
 void cls() {
-	cout << "\033[2J\033[0;0H";
-	cout.flush();
+	#ifdef __linux__
+	system("clear");
+	#elif _WIN32
+	system("cls")
+	#endif
+	// cout << "\033[2J\033[0;0H";
+	// cout.flush();
 }
 
 
@@ -209,10 +214,10 @@ int InstructionLength(byte opcode) {
 		case 0b11000001:					//sub HL,&imm
 			return 3;
 		//and A,reg
-		case 0b00101000:
 		case 0b00101001:
 		case 0b00101010:
 		case 0b00101011:
+		// case 0b00101000:
 			return 1;
 		//xor A,reg
 		case 0b00101100:
@@ -221,10 +226,10 @@ int InstructionLength(byte opcode) {
 		case 0b00101111:
 			return 1;
 		//or  A,reg
-		case 0b00110000:
 		case 0b00110001:
 		case 0b00110010:
 		case 0b00110011:
+		// case 0b00110000:
 			return 1;
 		//inc reg
 		case 0b00110100:
@@ -312,34 +317,34 @@ int InstructionLength(byte opcode) {
 		case 0b10100111:
 			return 1;
 		//flag x
-		case 0b10111000:
-		case 0b10111001:
 		case 0b10111010:
 		case 0b10111011:
 		case 0b10111100:
 		case 0b10111101:
 		case 0b10111110:
 		case 0b10111111:
+		// case 0b10111000:
+		// case 0b10111001:
 			return 1;		
 
 		//load instructions
 		//ld reg1,reg2
-		case 0b01000000:
 		case 0b01000001:
 		case 0b01000010:
 		case 0b01000011:
 		case 0b01000100:
-		case 0b01000101:
 		case 0b01000110:
 		case 0b01000111:
 		case 0b01001000:
 		case 0b01001001:
-		case 0b01001010:
 		case 0b01001011:
 		case 0b01001100:
 		case 0b01001101:
 		case 0b01001110:
-		case 0b01001111:
+		// case 0b01000000:
+		// case 0b01000101:
+		// case 0b01001010:
+		// case 0b01001111:
 			return 1;
 		//ld reg,%imm
 		case 0b01010000:
@@ -518,12 +523,12 @@ string codeToMnemonic(byte opcode) {
 			return "pop AB";
 
 		//alu instructions
-				case 0b00100000:
+		case 0b00100000:
 		case 0b00100001:
 		case 0b00100010:
 		case 0b00100011:
 			return "add A," + reg1;
-				case 0b00100100:
+		case 0b00100100:
 		case 0b00100101:
 		case 0b00100110:
 		case 0b00100111:
@@ -536,27 +541,27 @@ string codeToMnemonic(byte opcode) {
 			return "add HL,&";
 		case 0b11000001:
 			return "sub HL,&";
-				case 0b00101000:
 		case 0b00101001:
 		case 0b00101010:
 		case 0b00101011:
+		// case 0b00101000:
 			return "and A," + reg1;
-				case 0b00101100:
+		case 0b00101100:
 		case 0b00101101:
 		case 0b00101110:
 		case 0b00101111:
 			return "xor A," + reg1;
-				case 0b00110000:
 		case 0b00110001:
 		case 0b00110010:
 		case 0b00110011:
+		// case 0b00110000:
 			return  "or A," + reg1;
-				case 0b00110100:
+		case 0b00110100:
 		case 0b00110101:
 		case 0b00110110:
 		case 0b00110111:
 			return "inc " + reg1;
-				case 0b00111000:
+		case 0b00111000:
 		case 0b00111001:
 		case 0b00111010:
 		case 0b00111011:
@@ -571,35 +576,35 @@ string codeToMnemonic(byte opcode) {
 			return "dec SP";
 		case 0b10000000:
 			return "cmp A,%";
-				case 0b10000001:
+		case 0b10000001:
 		case 0b10000010:
 		case 0b10000011:
 			return "cmp A," + reg1;
-				case 0b01110100:
+		case 0b01110100:
 		case 0b01110101:
 		case 0b01110110:
 		case 0b01110111:
 			return "not " + reg1;
-				case 0b01111000:
+		case 0b01111000:
 		case 0b01111001:
 		case 0b01111010:
 		case 0b01111011:
 			return "ror " + reg1;
-				case 0b01111100:
+		case 0b01111100:
 		case 0b01111101:
 		case 0b01111110:
 		case 0b01111111:
 			return "rol " + reg1;
 		case 0b00010100:
 			return "add HL,AB";
-				case 0b10101000:
+		case 0b10101000:
 		case 0b10101001:
 		case 0b10101010:
 		case 0b10101011:
 			return "adc A," + reg1;
 
 		//bit operations
-				case 0b10010000:
+		case 0b10010000:
 		case 0b10010001:
 		case 0b10010010:
 		case 0b10010011:
@@ -608,7 +613,7 @@ string codeToMnemonic(byte opcode) {
 		case 0b10010110:
 		case 0b10010111:
 			return "bit " + to_string(opcode % 8) + ",A";
-				case 0b10011000:
+		case 0b10011000:
 		case 0b10011001:
 		case 0b10011010:
 		case 0b10011011:
@@ -617,7 +622,7 @@ string codeToMnemonic(byte opcode) {
 		case 0b10011110:
 		case 0b10011111:
 			return "res " + to_string(opcode % 8) + ",A";
-				case 0b10100000:
+		case 0b10100000:
 		case 0b10100001:
 		case 0b10100010:
 		case 0b10100011:
@@ -626,35 +631,35 @@ string codeToMnemonic(byte opcode) {
 		case 0b10100110:
 		case 0b10100111:
 			return "set " + to_string(opcode % 8) + ",A";
-				case 0b10111000:
-		case 0b10111001:
 		case 0b10111010:
 		case 0b10111011:
 		case 0b10111100:
 		case 0b10111101:
 		case 0b10111110:
 		case 0b10111111:
+		// case 0b10111000:
+		// case 0b10111001:
 			return "flag " + to_string(opcode % 8);
 
 		//load instructions
-				case 0b01000000:
 		case 0b01000001:
 		case 0b01000010:
 		case 0b01000011:
 		case 0b01000100:
-		case 0b01000101:
 		case 0b01000110:
 		case 0b01000111:
 		case 0b01001000:
 		case 0b01001001:
-		case 0b01001010:
 		case 0b01001011:
 		case 0b01001100:
 		case 0b01001101:
 		case 0b01001110:
-		case 0b01001111:
+		// case 0b01000000:
+		// case 0b01000101:
+		// case 0b01001010:
+		// case 0b01001111:
 			return "ld " + reg2 + "," + reg1;
-				case 0b01010000:
+		case 0b01010000:
 		case 0b01010001:
 		case 0b01010010:
 		case 0b01010011:
@@ -667,12 +672,12 @@ string codeToMnemonic(byte opcode) {
 			return "ld H,A";
 		case 0b01011111:
 			return "ld L,A";
-				case 0b01010100:
+		case 0b01010100:
 		case 0b01010101:
 		case 0b01010110:
 		case 0b01010111:
 			return "ld " + reg1 + ",(HL)";
-				case 0b01011000:
+		case 0b01011000:
 		case 0b01011001:
 		case 0b01011010:
 		case 0b01011011:
@@ -683,44 +688,44 @@ string codeToMnemonic(byte opcode) {
 			return "ld HL,AB";
 		case 0b11000010:
 			return "ld AB,HL";
-				case 0b01100000:
+		case 0b01100000:
 		case 0b01100001:
 		case 0b01100010:
 		case 0b01100011:
 			return "ld (&)," + reg1;
-				case 0b01100100:
+		case 0b01100100:
 		case 0b01100101:
 		case 0b01100110:
 		case 0b01100111:
 			return "ld " + reg1 + ",(&)";
-				case 0b01101000:
+		case 0b01101000:
 		case 0b01101001:
 		case 0b01101010:
 		case 0b01101011:
 			return "ldi " + reg1 + ",(HL)";
-				case 0b01101100:
+		case 0b01101100:
 		case 0b01101101:
 		case 0b01101110:
 		case 0b01101111:
 			return "ldi (HL)," + reg1;
-				case 0b10000100:
+		case 0b10000100:
 		case 0b10000101:
 		case 0b10000110:
 		case 0b10000111:
 			return "ldd " + reg1 + ",(HL)";
-				case 0b10001000:
+		case 0b10001000:
 		case 0b10001001:
 		case 0b10001010:
 		case 0b10001011:
 			return "ldd (HL)," + reg1;
 		
 		//video instructions
-				case 0b10101100:
+		case 0b10101100:
 		case 0b10101101:
 		case 0b10101110:
 		case 0b10101111:
 			return "stv (&)," + reg1;
-				case 0b10110000:
+		case 0b10110000:
 		case 0b10110001:
 		case 0b10110010:
 		case 0b10110011:

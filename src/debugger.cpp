@@ -64,9 +64,10 @@ void Debugger::DebugInit(CPU_T* CPU) {
 	#ifdef _WIN32
 	command = "title " + WINDOW_TITLE;
 	#elif __linux__
-	command = "echo -ne \"\\033]0;" + WINDOW_TITLE + "\\007\""
+	command = "echo -ne \"\\033]0;" + WINDOW_TITLE + "\\007\"";
 	#endif
 	system(command.c_str());
+	cls();
 
 	//if the folder doesn't exist, create it
 	namespace fs = std::filesystem;

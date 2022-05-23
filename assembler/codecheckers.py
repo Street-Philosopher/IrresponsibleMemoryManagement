@@ -376,6 +376,8 @@ def And(params):
 
 	if params[0].upper() == "A":
 		param = params[1].upper()
+		if param == "A":
+			raise ParamError("logical operation 'A and A' is not allowed")
 		if param in regs:
 			return [opcodestable["and"] + regs.index(param)]
 		else: raise ParamError("second parameter for and operation on 'A' should be a register (A,B,C,D)")
@@ -386,6 +388,8 @@ def Or(params):
 
 	if params[0].upper() == "A":
 		param = params[1].upper()
+		if param == "A":
+			raise ParamError("logical operation 'A or A' is not allowed")
 		if param in regs:
 			return [opcodestable["or"] + regs.index(param)]
 		else: raise ParamError("second parameter for or operation on 'A' should be a register (A,B,C,D)")
@@ -551,6 +555,8 @@ def ld(params):
 	param2 = params[1].upper()
 	if param1 in regs:
 		if param2 in regs:	#ld reg,reg
+			if param1 == param2:
+				raise ParamError("loading from and to the same register is not allowed")
 			return [
 				#destination is in bits 2 and 3, other register in bits 0-1
 				ldc + 0b100 * regs.index(param1) + regs.index(param2)
