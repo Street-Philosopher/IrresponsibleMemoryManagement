@@ -26,7 +26,6 @@ using Debugger::printdebug;
 #define SP CPU.SP
 #define PC CPU.PC
 
-//the CPU is a class, this constructor initialises it
 CPU_T CPU = CPU_T();
 
 void mainloop();

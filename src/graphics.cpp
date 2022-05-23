@@ -1,6 +1,7 @@
 #include <SFML/Graphics.hpp>
 #include <SFML/Window.hpp>
 
+#include "util.h"
 #include "types.h"
 #include "cramConstants.h"
 
@@ -22,7 +23,7 @@ using std::to_string;
 #define UpdateWindow() window.display()
 
 
-RenderWindow window(sf::VideoMode(256, 256), "Display");
+RenderWindow window(sf::VideoMode(256, 256), WINDOW_TITLE);
 
 
 auto debugKey = Keyboard::Escape;

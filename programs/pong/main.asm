@@ -652,7 +652,6 @@ drawPad:
 
 	ret
 
-; TODO: se uso div / 8 posso usare i bitwise
 div:        ; func div(dividend => A, divisor => B) --> (remainder => A, quotient => C)
     ld c,0      ; how many times were we able to subtract
 

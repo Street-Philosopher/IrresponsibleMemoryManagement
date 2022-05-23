@@ -303,14 +303,8 @@ def add(params):
 	
 	if params[0].upper() == "A":
 		param = params[1].upper()
-		if param == "A":
-			return [opcodestable["add"] + 0]
-		if param == "B":
-			return [opcodestable["add"] + 1]
-		if param == "C":
-			return [opcodestable["add"] + 2]
-		if param == "D":
-			return [opcodestable["add"] + 3]
+		if param in regs:
+			return [opcodestable["add"] + regs.index(param)]
 		else:
 			try:
 				val = int(param.lower(), 0)
@@ -341,14 +335,8 @@ def adc(params):
 	
 	if params[0].upper() == "A":
 		param = params[1].upper()
-		if param == "A":
-			return [opcodestable["adc"] + 0]
-		if param == "B":
-			return [opcodestable["adc"] + 1]
-		if param == "C":
-			return [opcodestable["adc"] + 2]
-		if param == "D":
-			return [opcodestable["adc"] + 3]
+		if param in regs:
+			return [opcodestable["adc"] + regs.index(param)]
 		else: raise ParamError("second parameter for carry addition to A should be a register (A,B,C,D)")
 	else: raise ParamError("first parameter for adc should be A")
 
@@ -358,14 +346,8 @@ def sub(params):
 
 	if params[0].upper() == "A":
 		param = params[1].upper()
-		if param == "A":
-			return [opcodestable["sub"] + 0]
-		if param == "B":
-			return [opcodestable["sub"] + 1]
-		if param == "C":
-			return [opcodestable["sub"] + 2]
-		if param == "D":
-			return [opcodestable["sub"] + 3]
+		if param in regs:
+			return [opcodestable["sub"] + regs.index(param)]
 		else:	#immediate
 			try:
 				val = int (params[1], 0)
@@ -394,14 +376,8 @@ def And(params):
 
 	if params[0].upper() == "A":
 		param = params[1].upper()
-		if param == "A":
-			return [opcodestable["and"] + 0]
-		if param == "B":
-			return [opcodestable["and"] + 1]
-		if param == "C":
-			return [opcodestable["and"] + 2]
-		if param == "D":
-			return [opcodestable["and"] + 3]
+		if param in regs:
+			return [opcodestable["and"] + regs.index(param)]
 		else: raise ParamError("second parameter for and operation on 'A' should be a register (A,B,C,D)")
 	else: raise ParamError("first parameter for and should be A")
 def Or(params):
@@ -410,14 +386,8 @@ def Or(params):
 
 	if params[0].upper() == "A":
 		param = params[1].upper()
-		if param == "A":
-			return [opcodestable["or"] + 0]
-		if param == "B":
-			return [opcodestable["or"] + 1]
-		if param == "C":
-			return [opcodestable["or"] + 2]
-		if param == "D":
-			return [opcodestable["or"] + 3]
+		if param in regs:
+			return [opcodestable["or"] + regs.index(param)]
 		else: raise ParamError("second parameter for or operation on 'A' should be a register (A,B,C,D)")
 	else: raise ParamError("first parameter for or should be A")
 def Xor(params):
@@ -426,14 +396,8 @@ def Xor(params):
 
 	if params[0].upper() == "A":
 		param = params[1].upper()
-		if param == "A":
-			return [opcodestable["xor"] + 0]
-		if param == "B":
-			return [opcodestable["xor"] + 1]
-		if param == "C":
-			return [opcodestable["xor"] + 2]
-		if param == "D":
-			return [opcodestable["xor"] + 3]
+		if param in regs:
+			return [opcodestable["xor"] + regs.index(param)]
 		else: raise ParamError("second parameter for xor operation on 'A' should be a register (A,B,C,D)")
 	else: raise ParamError("first parameter for xor should be A")
 
@@ -442,14 +406,8 @@ def Not(params):
 		raise ParamError("expected one parameter for not")
 
 	param = params[0].upper()
-	if param == "A":
-		return [opcodestable["not"] + 0]	#TODO: this can be made better
-	if param == "B":
-		return [opcodestable["not"] + 1]
-	if param == "C":
-		return [opcodestable["not"] + 2]
-	if param == "D":
-		return [opcodestable["not"] + 3]
+	if param in regs:
+		return [opcodestable["not"] + regs.index(param)]
 	else: raise ParamError("parameter for not should be a register (A,B,C,D)")
 
 def inc(params):
@@ -457,17 +415,11 @@ def inc(params):
 		raise ParamError("expected one parameter for inc")
 
 	param = params[0].upper()
-	if param == "A":
-		return [opcodestable["inc"] + 0]
-	if param == "B":
-		return [opcodestable["inc"] + 1]
-	if param == "C":
-		return [opcodestable["inc"] + 2]
-	if param == "D":
-		return [opcodestable["inc"] + 3]
-	if param == "HL":
+	if param in regs:
+		return [opcodestable["inc"] + regs.index(param)]
+	elif param == "HL":
 		return [opcodestable["inc"] + 0b1000]
-	if param == "SP":
+	elif param == "SP":
 		return [opcodestable["inc"] + 0b1001]
 	else: raise ParamError("parameter for inc should be a register (A,B,C,D)")
 def dec(params):
@@ -475,16 +427,10 @@ def dec(params):
 		raise ParamError("expected one parameter for dec")
 
 	param = params[0].upper()
-	if param == "A":
-		return [opcodestable["dec"] + 0]
-	if param == "B":
-		return [opcodestable["dec"] + 1]
-	if param == "C":
-		return [opcodestable["dec"] + 2]
-	if param == "D":
-		return [opcodestable["dec"] + 3]
+	if param in regs:
+		return [opcodestable["dec"] + regs.index(param)]
 	if param == "HL":
-		return [opcodestable["inc"] + 0b1010]	#this is not a mistake, it's right
+		return [opcodestable["inc"] + 0b1010]	#THIS IS NOT A MISTKAE, it's right
 	if param == "SP":
 		return [opcodestable["inc"] + 0b1011]
 	else: raise ParamError("parameter for dec should be a register (A,B,C,D)")
@@ -494,28 +440,16 @@ def ror(params):
 		raise ParamError("expected one parameter for ror")
 	
 	param = params[0].upper()
-	if param == "A":
-		return [opcodestable["ror"] + 0]
-	if param == "B":
-		return [opcodestable["ror"] + 1]
-	if param == "C":
-		return [opcodestable["ror"] + 2]
-	if param == "D":
-		return [opcodestable["ror"] + 3]
+	if param in regs:
+		return [opcodestable["ror"] + regs.index(param)]
 	else: raise ParamError("parameter for ror should be a register (A,B,C,D)")
 def rol(params):
 	if len(params) != 1:
 		raise ParamError("expected one parameter for rol")
 	
 	param = params[0].upper()
-	if param == "A":
-		return [opcodestable["rol"] + 0]
-	if param == "B":
-		return [opcodestable["rol"] + 1]
-	if param == "C":
-		return [opcodestable["rol"] + 2]
-	if param == "D":
-		return [opcodestable["rol"] + 3]
+	if param in regs:
+		return [opcodestable["rol"] + regs.index(param)]
 	else: raise ParamError("parameter for rol should be a register (A,B,C,D)")
 
 def cmp(params):

@@ -20,7 +20,7 @@ using std::endl;
 using std::getline;
 
 
-//todo: load rom, better breakpoint checking, fare cose per gli altri due tipi di ram, help specifico
+//todo: better breakpoint checking, fare cose per gli altri due tipi di ram, help specifico
 
 // when we press enter without a command this will be repeated
 string lastcommand = "s";
@@ -59,6 +59,15 @@ int SaveState(CPU_T* _cpu, int num);
 
 void Debugger::DebugInit(CPU_T* CPU) {
     
+	//set window title
+	std::string command;
+	#ifdef _WIN32
+	command = "title " + WINDOW_TITLE;
+	#elif __linux__
+	command = "echo -ne \"\\033]0;" + WINDOW_TITLE + "\\007\""
+	#endif
+	system(command.c_str());
+
 	//if the folder doesn't exist, create it
 	namespace fs = std::filesystem;
 	if (!fs::is_directory("saveStates") || !fs::exists("saveStates")) {
@@ -224,7 +233,7 @@ void Debugger::printdebug(CPU_T* _cpu) {
 					<< "help command        - get a descritpion of the syntax of the given command" << "\n"
 //					<< "options             - list all options" << "\n"
 
- 					<< "step                - execute the next instruction (can be shortened to 's')" << "\n"
+ 					<< "step                - execute the next instruction (short: 's')" << "\n"
  					<< "next                - execute the next instruction skipping over function calls (short: 'n')" << "\n"
  					<< "finish              - run until the end of the current function (short: 'f')" << "\n"
 
@@ -232,7 +241,6 @@ void Debugger::printdebug(CPU_T* _cpu) {
 					<< "cc reset            - print the value of the counter, then reset it" << "\n"
 
 //					<< "set name val        - set the given option to the given value" << "\n"
-
 
 					<< "m [v/c] ADDR        - print the memory value at \"addr\"" << "\n"
 					<< "m [v/c] ADD1-ADD2   - print the values from \"add1\" to \"add2\"" << "\n"
