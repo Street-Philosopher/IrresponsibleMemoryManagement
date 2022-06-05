@@ -1,6 +1,9 @@
 #from er import er as er
 
 #this way we can have the warning function from main to here without circimp
+from typing import Callable
+
+
 funcs = []
 
 labels = {}
@@ -67,6 +70,35 @@ def StringToBytes(string, maxlength = -1):
 		warning("string given is too long, going to be resized to '" + string[:maxlength] + "'")	#warning
 
 	return list(bb)
+
+def GetBytesFromImmediate(param: str, maxbytes = -1) -> list[int]:
+	#exceptions must be handled outside of this function
+
+	if param[0] == param[-1] == '"' or param[0] == param[-1] == "'":	#this is so stupid I love it
+		val = StringToBytes(param[1:-1], maxbytes)
+		return val	#val is a list
+	#for numbers
+	val = int(param, 0)
+	#keeps only the lowest (maxbytes) bytes of the end value
+	if maxbytes != -1:
+		max_factor = (1 << (maxbytes * 8)) - 1 
+		if val != val & max_factor:
+			val &= max_factor
+			warning("value too large, changed to " + str(val))
+	
+	retval = []
+	while val != 0:
+		retval.append(val % 0x100)
+		val >>= 8
+	while len(retval) < maxbytes:
+		retval += [0]
+	if maxbytes > 0:
+		while len(retval) > maxbytes:
+			retval.pop()
+	elif len(retval) == 0:
+		retval = [0]
+
+	return retval
 
 #from instruction mnemonic to opcode
 opcodestable = {
@@ -380,7 +412,19 @@ def And(params):
 			raise ParamError("logical operation 'A and A' is not allowed")
 		if param in regs:
 			return [opcodestable["and"] + regs.index(param)]
-		else: raise ParamError("second parameter for and operation on 'A' should be a register (A,B,C,D)")
+		else:
+			#immediate
+			try:
+				val = int(param, 0)
+				if val != val & 0xFF:
+					val &= 0xFF
+					warning("value too large, changed to " + str(val))
+				return [
+					opcodestable["and"],	#it takes the place of "and A,A"
+					val
+				]
+			except:
+				raise ParamError("invalid parameter for 'and' operation on A")
 	else: raise ParamError("first parameter for and should be A")
 def Or(params):
 	if len(params) != 2:
@@ -392,7 +436,19 @@ def Or(params):
 			raise ParamError("logical operation 'A or A' is not allowed")
 		if param in regs:
 			return [opcodestable["or"] + regs.index(param)]
-		else: raise ParamError("second parameter for or operation on 'A' should be a register (A,B,C,D)")
+		else:
+			#immediate
+			try:
+				val = int(param, 0)
+				if val != val & 0xFF:
+					val &= 0xFF
+					warning("value too large, changed to " + str(val))
+				return [
+					opcodestable["or"],		#it takes the place of "or A,A"
+					val
+				]
+			except:
+				raise ParamError("invalid parameter for 'or' operation on A")
 	else: raise ParamError("first parameter for or should be A")
 def Xor(params):
 	if len(params) != 2:
@@ -538,9 +594,10 @@ def flag(params):
 		if not 0 <= val1 <= 7:
 			raise
 	except:
-		raise ParamError("expected a number from zero to seven for parameter of 'flag'")
+		raise ParamError("expected a number from two to seven for parameter of 'flag'")
 	
-	#TODO: maybe remove "flag 0" and "flag 1". if i do, i should also remove ld A,A etc tho
+	if val1 == 0 or val1 == 1:	#flag 0 and 1 are prohibited
+		raise ParamError("'flag 0' and 'flag 1' are prohibited")
 
 	return [ opcodestable["flag"] + val1 ]
 
@@ -608,24 +665,28 @@ def ld(params):
 
 		#else it's an immediate:
 
-		#for strings
-		#TODO: make this into a func maybe
-		if param2[0] == param2[-1] == '"' or param2[0] == param2[-1] == "'":	#this is so stupid I love it
-			param2 = params[1]		#this way we get rid of the toupper
-			val = StringToBytes(param2[1:-1], 1)
-			return [ ldc + regs.index(param1) + 0b10000 ] + val	#val is a list
-		#for numbers
 		try:
-			val = int(param2, 0)
-			if val != val & 0xFF:
-				val &= 0xFF
-				warning("value too large, changed to " + str(val))
-			return [
-				ldc + regs.index(param1) + 0b10000,
-				val
-			]
+			val = GetBytesFromImmediate(params[1], maxbytes=1)
+			return [ ldc + regs.index(param1) ] + val
 		except:
-			raise ParamError(f"invalid parameter for load to address '{param2.lower()}'") #return [ (ldc + regs.index(param1)), param2.lower(), None ]
+			raise ParamError(f"invalid parameter for load to address '{params[1]}'")
+		# #for strings
+		# if param2[0] == param2[-1] == '"' or param2[0] == param2[-1] == "'":	#this is so stupid I love it
+		# 	param2 = params[1]		#this way we get rid of the toupper
+		# 	val = StringToBytes(param2[1:-1], 1)
+		# 	return [ ldc + regs.index(param1) + 0b10000 ] + val	#val is a list
+		# #for numbers
+		# try:
+		# 	val = int(param2, 0)
+		# 	if val != val & 0xFF:
+		# 		val &= 0xFF
+		# 		warning("value too large, changed to " + str(val))
+		# 	return [
+		# 		ldc + regs.index(param1) + 0b10000,
+		# 		val
+		# 	]
+		# except:
+		# 	raise ParamError(f"invalid parameter for load to address '{param2.lower()}'") #return [ (ldc + regs.index(param1)), param2.lower(), None ]
 	#END of the "ld to reg" section
 
 	if param1 == "(HL)":	#load to HL pointer
@@ -651,26 +712,29 @@ def ld(params):
 			return [ 0b01011101 ]
 
 		#else it's to immediate
-		#for strings
-		if param2[0] == param2[-1] == '"' or param2[0] == param2[-1] == "'":
-			param2 = params[1]	#this way we get rid of the toupper
-			val = StringToBytes(param2[1:-1], 2)
-			return [ (ldc + 0b011100) ] + val		#val is a list
-		if param2[0].lower() == "ab":
-			return [ ldc + 0b011100 + 1 ]
-		#else it's number
 		try:
-			val = int(param2, 0)
-			if val != val & 0xFFFF:
-				val &= 0xFFFF
-				warning("value too large, changed to " + str(val))
-			return [
-				(ldc + 0b011100),
-				val  % 0x100,
-				val // 0x100
-			]
+			val = GetBytesFromImmediate(params[1], maxbytes=2)
+			return [ ldc + 0b011100 ] + val
 		except:
-			return [ (ldc + 0b011100), param2.lower(), None ]
+			return [ (ldc + 0b011100), param2.lower(), None ]	#addr
+		# #for strings
+		# if param2[0] == param2[-1] == '"' or param2[0] == param2[-1] == "'":
+		# 	param2 = params[1]	#this way we get rid of the toupper
+		# 	val = StringToBytes(param2[1:-1], 2)
+		# 	return [ (ldc + 0b011100) ] + val		#val is a list
+		# #else it's number
+		# try:
+		# 	val = int(param2, 0)
+		# 	if val != val & 0xFFFF:
+		# 		val &= 0xFFFF
+		# 		warning("value too large, changed to " + str(val))
+		# 	return [
+		# 		(ldc + 0b011100),
+		# 		val  % 0x100,
+		# 		val // 0x100
+		# 	]
+		# except:
+		# 	return [ (ldc + 0b011100), param2.lower(), None ]
 	if param1 == "AB":
 		if param2 == "HL":
 			return [ 0b11000010 ]
@@ -931,17 +995,20 @@ def db(params):
 	Bytes = []
 	for param in params:
 		try:
-			if param[0] == param[-1] == '"' or param[0] == param[-1] == "'":
-				param = param[1:-1]		#remove quotes
-				Bytes += StringToBytes(param)
-			else:
-				val = int(param, 0)
-				if not 0xFF >= val >= 0x00:
-					val %= 0x100
-					warning("value for unsigned byte is too large, it will be resized to " + str(val))
-
-				Bytes.append(val)
-		except:
+			val = GetBytesFromImmediate(param)
+			Bytes += val
+			# if param[0] == param[-1] == '"' or param[0] == param[-1] == "'":
+			# 	param = param[1:-1]		#remove quotes
+			# 	Bytes += StringToBytes(param)
+			# else:
+			# 	val = int(param, 0)
+			# 	if not 0xFF >= val >= 0x00:
+			# 		val %= 0x100
+			# 		warning("value for unsigned byte is too large, it will be resized to " + str(val))
+			#
+			# 	Bytes.append(val)
+		except Exception as e:
+			print(e)
 			#labels
 			Bytes.append(param)
 			Bytes.append(None)

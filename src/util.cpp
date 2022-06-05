@@ -213,11 +213,13 @@ int InstructionLength(byte opcode) {
 			return 3;
 		case 0b11000001:					//sub HL,&imm
 			return 3;
+		//and A,%imm
+		case 0b00101000:
+			return 2;
 		//and A,reg
 		case 0b00101001:
 		case 0b00101010:
 		case 0b00101011:
-		// case 0b00101000:
 			return 1;
 		//xor A,reg
 		case 0b00101100:
@@ -225,11 +227,13 @@ int InstructionLength(byte opcode) {
 		case 0b00101110:
 		case 0b00101111:
 			return 1;
+		//or  A,%imm
+		case 0b00110000:
+			return 2;
 		//or  A,reg
 		case 0b00110001:
 		case 0b00110010:
 		case 0b00110011:
-		// case 0b00110000:
 			return 1;
 		//inc reg
 		case 0b00110100:
@@ -451,7 +455,7 @@ int InstructionLength(byte opcode) {
 		case 0b00010111:					//ldh A,(%addr)
 			return 2;
 
-		//invalid code
+		//invalid code, no parameters
 		default:
 			return 1;
 	}
@@ -541,20 +545,22 @@ string codeToMnemonic(byte opcode) {
 			return "add HL,&";
 		case 0b11000001:
 			return "sub HL,&";
+		case 0b00101000:
+			return "and A,%";
 		case 0b00101001:
 		case 0b00101010:
 		case 0b00101011:
-		// case 0b00101000:
 			return "and A," + reg1;
 		case 0b00101100:
 		case 0b00101101:
 		case 0b00101110:
 		case 0b00101111:
 			return "xor A," + reg1;
+		case 0b00110000:
+			return "or A,%";
 		case 0b00110001:
 		case 0b00110010:
 		case 0b00110011:
-		// case 0b00110000:
 			return  "or A," + reg1;
 		case 0b00110100:
 		case 0b00110101:

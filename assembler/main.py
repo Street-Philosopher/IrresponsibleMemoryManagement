@@ -12,8 +12,7 @@ The actual syntax of the instructions is in "codecheckers.py"
 
 PATH = input("path to the file: ") if len(args) <= 1 else args[1]
 
-#TODO - aggiungere i warning
-#forse: eval, include
+#TODO: eval, include
 
 
 def errormsg(msg, showline = True):
@@ -27,12 +26,12 @@ del(ccinit)
 
 #ignores the split if the symbol is between quotes
 def CustomSplit(string, char):
-	i = 0
 	tokens = []
 
+	endloop = False
 	isInDoubleQuotes = isInSingleQuotes = False
 
-	while char in string:
+	while char in string and endloop is False:
 		for x in range(len(string)):
 			if string[x] == '"':
 				isInDoubleQuotes = not isInDoubleQuotes
@@ -42,10 +41,11 @@ def CustomSplit(string, char):
 			if string[x] == char and not (isInSingleQuotes or isInDoubleQuotes):
 				tokens += [string[:x]]
 				string = string[x + 1:]
-				i = 0
 				break
 
-			i += 1
+			if x == len(string)-1:
+				endloop = True
+				break
 	
 	tokens += [string]		#what's left
 	return tokens
@@ -92,7 +92,7 @@ def Preprocessing():	#todo: do comment and other stuff in here
 					lines[linecounter - 1] = ""
 					continue
 				else:
-					errormsg("unknown command \"" + line[1:] + "\"")
+					errormsg("unknown macro \"" + line[1:] + "\"")
 					exit()
 				"""
 				elif line[1:8] == "include":

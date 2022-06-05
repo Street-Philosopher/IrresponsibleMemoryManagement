@@ -36,7 +36,7 @@ display:
 0x0000-0x2000: screen data (one bit per pixel, with gb-like "squares")
 0xFF00-0xFFFF: screen settings
 updated every 65536 clock cycles
-# il resto è praticamente ram gratis
+# everything else is basically free ram
 
 
 cram:
@@ -50,7 +50,6 @@ F1: cycle coutner (high)	/
 
 
 
-#TODO: check for consistency between these and mainloop in main.cpp
 instructions:
 #sys instructions
 00000000 => nop
@@ -67,13 +66,16 @@ instructions:
 00011011 => pop AB
 
 #ALU instructions
-00010011 => add A,%imm
-00010100 => add HL,AB
-00010101 => sub A,%imm
 001000xx => add A,reg
 001001xx => sub A,reg
+00010011 => add A,%imm
+00010101 => sub A,%imm
+11000000 => add HL,&imm
+11000001 => sub HL,&imm
+00101000 => and A,%imm
 001010xx => and A,reg
 001011xx => xor A,reg
+00110000 => or  A,%imm
 001100xx => or  A,reg
 001101xx => inc reg
 001110xx => dec reg
@@ -81,41 +83,38 @@ instructions:
 00111101 => inc SP
 00111110 => dec HL
 00111111 => dec SP
+10000000 => cmp A,%imm
+100000xx => cmp A,reg
 011101xx => not reg
 011110xx => ror reg
 011111xx => rol reg
-10000000 => cmp A,%imm
-100000xx => cmp A,reg
+00010100 => add HL,AB
 101010xx => adc A,reg
-11000000 => add HL,&imm
-11000001 => sub HL,&imm
-
-#loads
-0100xxyy => ld reg2,reg1
-010100xx => ld reg,%imm
-010101xx => ld reg,(HL)
-010110xx => ld (HL),reg
-011000xx => ld (&imm),reg
-011001xx => ld reg,(&imm)
-01011100 => ld HL,&imm
-01011101 => ld HL,AB
-11000010 => ld AB,HL
-01011110 => ld H,A
-00010001 => ld A,H
-01011111 => ld L,A
-00010010 => ld A,L
-011010xx => ldi reg,(HL)
-011011xx => ldi (HL),reg
-100001xx => ldd reg,(HL)
-100010xx => ldd (HL),reg
-00010110 => ldh (%imm),A
-00010111 => ldh A,(%imm)
 
 #bitwise
 10010xxx => bit x
 10011xxx => res x
 10100xxx => set x
-10111xxx => flag x
+10111xxx => flag x #except for flag 0 and flag 1 which don't exist
+
+#loads
+0100xxyy => ld reg2,reg1
+010100xx => ld reg,%imm
+00010001 => ld A,H
+00010010 => ld A,L
+01011110 => ld H,A
+01011111 => ld L,A
+010101xx => ld reg,(HL)
+010110xx => ld (HL),reg
+01011100 => ld HL,&imm
+01011101 => ld HL,AB
+11000010 => ld AB,HL
+011000xx => ld (&imm),reg
+011001xx => ld reg,(&imm)
+011010xx => ldi reg,(HL)
+011011xx => ldi (HL),reg
+100001xx => ldd reg,(HL)
+100010xx => ldd (HL),reg
 
 #vram
 101011xx => stv (&imm),reg
@@ -129,11 +128,13 @@ instructions:
 10001110 => ccv (HL),(AB)
 10001111 => ccr (HL),(AB)
 
+#cram
+00010110 => ldh (%imm),A
+00010111 => ldh A,(%imm)
+
 #unused (71)
 00000011
 00010000
-00101000
-00110000
 01000000
 01000101
 01001010

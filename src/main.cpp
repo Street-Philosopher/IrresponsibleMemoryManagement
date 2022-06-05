@@ -127,9 +127,9 @@ void stop() {
 
 void push(uint16_t reg) {
 	//push the two 8b components
-	CPU.WriteMemory(0xFF00 + SP, (reg & 0xFF00) >> 8);
-	SP--;
 	CPU.WriteMemory(0xFF00 + SP, (reg & 0x00FF));
+	SP--;
+	CPU.WriteMemory(0xFF00 + SP, (reg & 0xFF00) >> 8);
 	SP--;
 
 }
@@ -138,18 +138,18 @@ void pop(uint16_t* reg) {
 
 	//pop two 8b values in the temp variable
 	SP++;
-	(*reg) += CPU.ReadMemory(0xFF00 + SP);
-	SP++;
 	(*reg) += CPU.ReadMemory(0xFF00 + SP) << 8;
-
-	CPU.SetFlag(0, (*reg) == 0);
-}
-void pop(byte* reg) {
 	SP++;
-	(*reg) = CPU.ReadMemory(0xFF00 + SP);
+	(*reg) += CPU.ReadMemory(0xFF00 + SP);
 
 	CPU.SetFlag(0, (*reg) == 0);
 }
+// void pop(byte* reg) {
+// 	SP++;
+// 	(*reg) = CPU.ReadMemory(0xFF00 + SP);
+
+// 	CPU.SetFlag(0, (*reg) == 0);
+// }
 
 void jp(uint16_t addr) {
 	PC = addr;
@@ -526,9 +526,9 @@ void CPU_T::exec(byte opcode) {
 				pop(&HL);
 				break;
 			case 0b00011011:					//pop AB
-				//TODO: this is bad
-				throw;
-				pop(&A);
+				pop(&w1);
+				A = (0xFF00 & w1) >> 8;
+				B = (0x00FF & w1);
 				break;
 
 
@@ -566,8 +566,12 @@ void CPU_T::exec(byte opcode) {
 				w1 += 0x100 * ReadNext();
 				subhl(w1);
 				break;
+			//and A,%imm
+			case 0b00101000:
+				b1 = ReadNext();
+				And(&A, &b1);
+				break;
 			//and A,reg
-			// case 0b00101000:
 			case 0b00101001:
 			case 0b00101010:
 			case 0b00101011:
@@ -580,8 +584,12 @@ void CPU_T::exec(byte opcode) {
 			case 0b00101111:
 				Xor(&A, GetRegPtr(opcode & 0b11));
 				break;
+			//or  A,%imm
+			case 0b00110000:
+				b1 = ReadNext();
+				Or(&A, &b1);
+				break;
 			//or  A,reg
-			// case 0b00110000:
 			case 0b00110001:
 			case 0b00110010:
 			case 0b00110011:
@@ -847,7 +855,7 @@ void CPU_T::exec(byte opcode) {
 			
 			
 			//video
-			//stv
+			//stv (&imm),reg
 			case 0b10101100:
 			case 0b10101101:
 			case 0b10101110:
@@ -856,7 +864,7 @@ void CPU_T::exec(byte opcode) {
 				w1 += 0x100 * ReadNext();
 				stv(w1, GetRegVal(opcode & 0b11));
 				break;
-			//ldv
+			//ldv reg,(&imm)
 			case 0b10110000:
 			case 0b10110001:
 			case 0b10110010:
