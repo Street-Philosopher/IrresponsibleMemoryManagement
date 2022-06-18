@@ -23,3 +23,5 @@ std::string codeToMnemonic(std::uint8_t opcode);
 int InstructionLength(std::uint8_t opcode);
 
 std::vector<std::string> splitString(const std::string& s);
+
+void LoadFileErrorMsg();

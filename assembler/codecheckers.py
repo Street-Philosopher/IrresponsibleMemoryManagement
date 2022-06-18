@@ -100,6 +100,7 @@ def GetBytesFromImmediate(param: str, maxbytes = -1) -> list[int]:
 
 	return retval
 
+#ADD_OPCODE:
 #from instruction mnemonic to opcode
 opcodestable = {
 	#sys
@@ -670,23 +671,6 @@ def ld(params):
 			return [ ldc + regs.index(param1) ] + val
 		except:
 			raise ParamError(f"invalid parameter for load to address '{params[1]}'")
-		# #for strings
-		# if param2[0] == param2[-1] == '"' or param2[0] == param2[-1] == "'":	#this is so stupid I love it
-		# 	param2 = params[1]		#this way we get rid of the toupper
-		# 	val = StringToBytes(param2[1:-1], 1)
-		# 	return [ ldc + regs.index(param1) + 0b10000 ] + val	#val is a list
-		# #for numbers
-		# try:
-		# 	val = int(param2, 0)
-		# 	if val != val & 0xFF:
-		# 		val &= 0xFF
-		# 		warning("value too large, changed to " + str(val))
-		# 	return [
-		# 		ldc + regs.index(param1) + 0b10000,
-		# 		val
-		# 	]
-		# except:
-		# 	raise ParamError(f"invalid parameter for load to address '{param2.lower()}'") #return [ (ldc + regs.index(param1)), param2.lower(), None ]
 	#END of the "ld to reg" section
 
 	if param1 == "(HL)":	#load to HL pointer
@@ -711,30 +695,12 @@ def ld(params):
 		if param2 == "AB":
 			return [ 0b01011101 ]
 
-		#else it's to immediate
+		#else it's to immediate or label
 		try:
 			val = GetBytesFromImmediate(params[1], maxbytes=2)
 			return [ ldc + 0b011100 ] + val
 		except:
-			return [ (ldc + 0b011100), param2.lower(), None ]	#addr
-		# #for strings
-		# if param2[0] == param2[-1] == '"' or param2[0] == param2[-1] == "'":
-		# 	param2 = params[1]	#this way we get rid of the toupper
-		# 	val = StringToBytes(param2[1:-1], 2)
-		# 	return [ (ldc + 0b011100) ] + val		#val is a list
-		# #else it's number
-		# try:
-		# 	val = int(param2, 0)
-		# 	if val != val & 0xFFFF:
-		# 		val &= 0xFFFF
-		# 		warning("value too large, changed to " + str(val))
-		# 	return [
-		# 		(ldc + 0b011100),
-		# 		val  % 0x100,
-		# 		val // 0x100
-		# 	]
-		# except:
-		# 	return [ (ldc + 0b011100), param2.lower(), None ]
+			return [ (ldc + 0b011100), param2.lower(), None ]
 	if param1 == "AB":
 		if param2 == "HL":
 			return [ 0b11000010 ]
@@ -997,16 +963,6 @@ def db(params):
 		try:
 			val = GetBytesFromImmediate(param)
 			Bytes += val
-			# if param[0] == param[-1] == '"' or param[0] == param[-1] == "'":
-			# 	param = param[1:-1]		#remove quotes
-			# 	Bytes += StringToBytes(param)
-			# else:
-			# 	val = int(param, 0)
-			# 	if not 0xFF >= val >= 0x00:
-			# 		val %= 0x100
-			# 		warning("value for unsigned byte is too large, it will be resized to " + str(val))
-			#
-			# 	Bytes.append(val)
 		except Exception as e:
 			print(e)
 			#labels
@@ -1052,6 +1008,7 @@ def org(params):
 	#this means we now have the correct amount of bytes to append
 	return retval
 
+#ADD_OPCODE:
 #table that returns the checker function for the given mnemonic
 checkertable = {
 	#sys

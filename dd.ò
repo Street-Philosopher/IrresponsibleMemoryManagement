@@ -7,7 +7,7 @@ little endian
 0000-7FFF: rom
 8000-FEFF: ram
 FF00-FFFF: stack
-# you can write to rom, the difference is that it's where programs are loaded
+# you CAN write to rom, the difference is that it's where programs are loaded
 # it's also a way to keep things tidier, saying "hey programs should go here and other stuff there"
 
 registers (8b):
@@ -36,7 +36,7 @@ display:
 0x0000-0x2000: screen data (one bit per pixel, with gb-like "squares")
 0xFF00-0xFFFF: screen settings
 updated every 65536 clock cycles
-# everything else is basically free ram
+# everything else is basically free
 
 
 cram:
@@ -50,6 +50,7 @@ F1: cycle coutner (high)	/
 
 
 
+#ADD_OPCODE:
 instructions:
 #sys instructions
 00000000 => nop
@@ -132,7 +133,7 @@ instructions:
 00010110 => ldh (%imm),A
 00010111 => ldh A,(%imm)
 
-#unused (71)
+#unused (69)
 00000011
 00010000
 01000000

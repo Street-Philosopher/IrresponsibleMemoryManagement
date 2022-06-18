@@ -1,7 +1,10 @@
 #include "debugger.h"
 #include "util.h"
 
-#include <filesystem>		//to check/create directories
+#define _SILENCE_EXPERIMENTAL_FILESYSTEM_DEPRECATION_WARNING
+#define _CRT_SECURE_NO_WARNINGS
+
+#include <experimental/filesystem>		//to check/create directories
 #include <sstream>
 #include <list>
 
@@ -50,6 +53,8 @@ typedef struct BreakPoint_T {
 } BreakPoint;
 
 list<BreakPoint> breakpoints;
+list<BreakPoint> breakpoints_cram;
+list<BreakPoint> breakpoints_vram;
 
 
 const string ssFolder = "saveStates/";
@@ -70,7 +75,7 @@ void Debugger::DebugInit(CPU_T* CPU) {
 	cls();
 
 	//if the folder doesn't exist, create it
-	namespace fs = std::filesystem;
+	namespace fs = std::experimental::filesystem;
 	if (!fs::is_directory("saveStates") || !fs::exists("saveStates")) {
 		fs::create_directory("saveStates");
 	}
@@ -94,6 +99,24 @@ bool Debugger::IsBreakpoint(word address, breakpointMode mode) {
 
 	//check the actual breakpoints
 	foreach (bp, breakpoints) {
+		if (bp.address == address && bp.mode == mode) return true;
+	}
+
+	return false;
+}
+bool Debugger::IsBreakpointVRAM(word address, breakpointMode mode) {
+
+	//check the actual breakpoints
+	foreach (bp, breakpoints_vram) {
+		if (bp.address == address && bp.mode == mode) return true;
+	}
+
+	return false;
+}
+bool Debugger::IsBreakpointCRAM(word address, breakpointMode mode) {
+
+	//check the actual breakpoints
+	foreach (bp, breakpoints_cram) {
 		if (bp.address == address && bp.mode == mode) return true;
 	}
 
@@ -222,8 +245,6 @@ void Debugger::printdebug(CPU_T* _cpu) {
 	{
 		//command list
 		if (tokens.at(0) == "help") {
-			//todo: specific help
-
 			cout << "\n\n"
 					<< "pressing enter will repeat the last step-like instruction" << "\n"
 					<< "press esc while running to start debugging" << "\n\n"
@@ -266,7 +287,7 @@ void Debugger::printdebug(CPU_T* _cpu) {
 					<< "ss NUM              - saves the state with the given number (0-9)" << "\n"
 					<< "ls NUM              - loads the state with the given number (0-9)" << "\n"
 
-					<< "load FILE           - loads the file's binary contents to memory" << "\n"
+					<< "load FILE           - loads the file's binary contents to memory, and restarts the CPU" << "\n"
 
 					<< "update              - force a screen update" << "\n"
 					<< "cls                 - clear the console" << "\n"
@@ -589,6 +610,9 @@ void Debugger::printdebug(CPU_T* _cpu) {
 			{
 				//first we check if it exists already
 				//we compare both address and mode bc we can add multiple breakpoints at the same address but w different modes
+				list<BreakPoint>* ls = nullptr;
+				//TODO: add the breakpoint checking the destination
+				
 				foreach(bp, breakpoints) {
 					if (bp.address == addr && bp.mode == mode) {
 						cout << "there already is a breakpoint at 0x" << WordToHex(addr) << " with mode " << BPModeToString(mode);
@@ -672,7 +696,7 @@ void Debugger::printdebug(CPU_T* _cpu) {
 				SaveState(_cpu, -1);	//for the reset command
 				goto updateDebugInfo;
 			} else {
-				cout << "could not load the file";
+				LoadFileErrorMsg();
 			}
 		}
 		//load state

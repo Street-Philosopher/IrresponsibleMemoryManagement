@@ -6,6 +6,8 @@
 
 using std::list;
 using Debugger::IsBreakpoint;
+using Debugger::IsBreakpointVRAM;
+using Debugger::IsBreakpointCRAM;
 
 
 //void RandomiseMemory(byte* pointer, int size) {
@@ -76,7 +78,7 @@ void CPU_T::init() {
 	SP = 0xFF;
 	PC = 0x0000;
 
-	//TODO: set initial cram values
+	//ADD_CRAM: set initial cram values
 	// cycle counter (for display)
 	cramBase[0xF0] = 0;
 	cramBase[0xF1] = 0;
@@ -144,7 +146,9 @@ byte CPU_T::ReadVRAM(word address) {
 }
 void CPU_T::WriteCRAM(byte address, byte value) {
 
-	//TODO: breakpoints
+	if (!Debugger::IsActive() && IsBreakpointCRAM(address, write)) {
+		throw BreakpointException();
+	}
 
 	//same as for normal read, but in a separate buffer
 	memorybuffer temp;
@@ -153,6 +157,10 @@ void CPU_T::WriteCRAM(byte address, byte value) {
 	cmb.push_back(temp);
 }
 byte CPU_T::ReadCRAM(byte address) {
+
+	if (!Debugger::IsActive() && IsBreakpointCRAM(address, read)) {
+		throw BreakpointException();
+	}
 	
 	return cramBase[address];
 }

@@ -78,6 +78,6 @@ class BreakpointException : public std::exception {
 	public:
 	const char * what () const throw ()
     {
-    	return "breakpoint triggered";
+    	return "breakpoint reached";
     }
 };

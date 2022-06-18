@@ -131,7 +131,12 @@ bool LoadProgramToMemory(string name, byte* memory) {
 	catch(...) { return 0; }
 }
 
+void LoadFileErrorMsg() {
+	std::cout << "there was an error loading the program" << std::endl;
+}
 
+
+//ADD_OPCODE:
 //returns the number of bytes an instruction requires
 int InstructionLength(byte opcode) {
 
@@ -461,6 +466,7 @@ int InstructionLength(byte opcode) {
 	}
 }
 
+//ADD_OPCODE:
 string codeToMnemonic(byte opcode) {
 	
 	string reg1(1, (char)('A' + (opcode % 4)));

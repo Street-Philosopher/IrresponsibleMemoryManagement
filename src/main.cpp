@@ -35,7 +35,7 @@ int main(int argc, char* argv[]) {
 
 	if (argc >= 2) {
 		if (LoadProgramToMemory(argv[1], CPU.base) == false) {
-			std::cout << "there was an error loading the program" << std::endl;
+			LoadFileErrorMsg();
 			getchar();
 		}
 	}
@@ -73,7 +73,7 @@ void mainloop() {
 		//debug is done before, so if we hit a breakpoint we show the instruction before it's executed
 		//we first evaluate Debugger::IsActive so we don't have to call isbreakpoint if Debugger::IsActive is true
 		if (Debugger::IsActive() || IsBreakpoint(PC, execute)) {
-			Debugger::SetActive(true);		//yes this is dumb
+			Debugger::SetActive(true);
 			printdebug(&CPU);
 		}
 
@@ -393,6 +393,7 @@ void CPU_T::exec(byte opcode) {
 		//we clear the buffer to make sure there are no leftovers from previous instruction
 		ClearWriteBuffer();
 
+		//ADD_OPCODE
 		switch(opcode) {//system instructions
 			case 0b00000000:					//nop
 				nop();
