@@ -24,6 +24,30 @@ using std::getline;
 
 
 //todo: better breakpoint checking, fare cose per gli altri due tipi di ram, help specifico
+//TODO: make commands less bad
+
+
+struct debugger_command_t;
+enum command_return_t { crt_none, crt_exit_debugger, crt_execution_error, crt_param_error };
+typedef command_return_t (*CommandFunc_t)(CPU_T* cpu, vector<string> params);
+//possible return values of the command
+typedef struct debugger_command_t {
+
+	//command to write
+	string name;
+
+	//we will first check if this is not null. if it isn't, we will ignore the other two as this is an alternative for another command, we will execute the parent command
+	debugger_command_t* parent_command = NULL;
+	
+	//function to execute
+	CommandFunc_t command_function;
+
+	//for the help menu. short is for general, long is for specific
+	string description_short, description_long;
+	string parameter_description;
+
+} command_t;
+
 
 // when we press enter without a command this will be repeated
 string lastcommand = "s";
@@ -122,18 +146,16 @@ bool Debugger::IsBreakpointCRAM(word address, breakpointMode mode) {
 
 	return false;
 }
+
 string BPModeToString(breakpointMode mode) {
 	//there is no way of converting enums to string so we do this
 	switch(mode) {
 		case (execute):
 			return "execute";
-			break;
 		case (write):
 			return "write";
-			break;
 		case (read):
 			return "read";
-			break;
 	}
 }
 
@@ -204,11 +226,8 @@ string AddImmediatesToDisassembly(string original, CPU_T* _cpu) {
 	return original;
 }
 
-void Debugger::printdebug(CPU_T* _cpu) {
+void UpdateDebugInfo(CPU_T* _cpu) {
 
-	//do it before anything as we don't want to repeat it in the debugger
-
-	updateDebugInfo:
 	cls();
 
 	word pc = _cpu->PC;
@@ -230,6 +249,12 @@ void Debugger::printdebug(CPU_T* _cpu) {
 	"\n";
 	
 	cout.flush();
+}
+void Debugger::printdebug(CPU_T* _cpu) {
+
+	//do it before anything as we don't want to repeat it in the debugger
+
+	UpdateDebugInfo(_cpu);
 
 	askcommand:
 	string command;
@@ -243,555 +268,26 @@ void Debugger::printdebug(CPU_T* _cpu) {
 
 	try
 	{
-		//command list
-		if (tokens.at(0) == "help") {
-			cout << "\n\n"
-					<< "pressing enter will repeat the last step-like instruction" << "\n"
-					<< "press esc while running to start debugging" << "\n\n"
-					
-					<< "commands:" << "\n"
-
-					<< "help                - list all commands" << "\n"
-					<< "help command        - get a descritpion of the syntax of the given command" << "\n"
-//					<< "options             - list all options" << "\n"
-
- 					<< "step                - execute the next instruction (short: 's')" << "\n"
- 					<< "next                - execute the next instruction skipping over function calls (short: 'n')" << "\n"
- 					<< "finish              - run until the end of the current function (short: 'f')" << "\n"
-
-					<< "cc                  - print the value of the counter" << "\n"
-					<< "cc reset            - print the value of the counter, then reset it" << "\n"
-
-//					<< "set name val        - set the given option to the given value" << "\n"
-
-					<< "m [v/c] ADDR        - print the memory value at \"addr\"" << "\n"
-					<< "m [v/c] ADD1-ADD2   - print the values from \"add1\" to \"add2\"" << "\n"
-
-					<< "w [v/c] ADDR VAL    - write \"val\" to \"addr\"" << "\n"
-
-					<< "reg NAME VAL        - load \"val\" in the given register" << "\n"
-
-					<< "b [v/c] [mode] ADDR - set a breakpoint at \"addr\" (the mode is -e by default)" << "\n"
-						<< "                modes:" << "\n"
-						<< "                	'-e'  => on execution (default)" << "\n"
-						<< "                	'-r'  => on read" << "\n"
-						<< "                	'-w'  => on write" << "\n"
-						<< "                	'-l'  => list all breakpoints" << "\n"
-						<< "                	'-d'  => delete breakpoint" << "\n"
-						<< "                	'-da' => delete all breakpoints" << "\n"
-
-					<< "jp ADDR             - jump to the given address" << "\n"
-
-					<< "dis ADDR            - disassemble the opcode at the given address" << "\n"
-					
-					<< "ss NUM              - saves the state with the given number (0-9)" << "\n"
-					<< "ls NUM              - loads the state with the given number (0-9)" << "\n"
-
-					<< "load FILE           - loads the file's binary contents to memory, and restarts the CPU" << "\n"
-
-					<< "update              - force a screen update" << "\n"
-					<< "cls                 - clear the console" << "\n"
-
-					<< "run                 - continue running until next breakpoint" << "\n"
-					<< "reset               - reset the CPU" << "\n"
-					;
-		}
-		//options list
-		else if (tokens.at(0) == "options") {
-
-			cout << "\n"
-					<< "placeholder         - text"
-					;
-		}
-
-		//settings
-		else if (tokens.at(0) == "set") {
-			OptionsMenu(tokens);
-		}
-
-		//finish
-		else if (command == "finish" || command == "f") {
-			doBreakDepth = true;
-			breakAtDepth = callDepth - 1;	//we want to break when we get out of the function, so one level higher
-		
-			//exit from debug screen
-			dodebug = false;
-			cls();
-			return;
-		}
-
-		//finish
-		else if (command == "step" || command == "s") {
-			lastcommand = "s";
-			return;
-		}
-		
-		//next
-		else if (command == "next" || command == "n") {
-			lastcommand = "n";
-
-			doBreakDepth = true;
-			breakAtDepth = callDepth;	//we want to break at the next instruction, so same level. this way we can also skip funcs
-		
-			//exit from debug screen
-			dodebug = false;
-			cls();
-			return;
-		}
-
-		//clock counter
-		else if (tokens.at(0) == "cc") {
-			std::cout << _cpu->cyclecounter << "\n";
-
-			if (tokens.size() == 2 && tokens.at(1) == "reset")
-				_cpu->cyclecounter = 0;
-		}
-
-		//memory viewer
-		else if (tokens.at(0) == "m") {
-
-			if (tokens.size() < 2) {
-				cout << "invalid parameter number for 'm'";
-				goto end;
+		//find the command to execute
+		CommandFunc_t function = NULL;
+		foreach (command, commands) {
+			while (command.parent_command != NULL) {
+				command = *command.parent_command;
 			}
 
-			int destination = -1;	//0 is normal ram, 1 is vram, 2 is cram
-
-			if (tokens.size() == 2) {	//no specified destination, so second element is address
-				destination = 0;
-				command = tokens.at(1);
-			} else if (tokens.size() == 3) {	//address is third element bc destination is second
-				if (tokens.at(1) == "v") destination = 1;	//vram
-				if (tokens.at(1) == "c") destination = 2;	//cram
-				command = tokens.at(2);
-			}
-			
-			auto pos = command.find('-');		//find the first '-' symbol
-			
-			if (pos == string::npos) {		// if there is no '-' in the command it's a single address
-				int addr = GetAddrFromStr(command);
-
-				if (addr == -1) {	// an error occured in the function
-					cout << "address out of range (min: " << ADDRESS_MIN << ", max: " << ADDRESS_MAX << ")";
-					goto end;
-				}
-
-				byte result;
-				switch(destination) {
-					case 0:
-						result = _cpu->ReadMemory(addr);
-						break;
-					case 1:
-						result = _cpu->ReadVRAM(addr);
-						break;
-					case 2:
-						result = _cpu->ReadCRAM(addr);
-						break;
-					default:
-						throw std::exception();
-				}
-				cout << ByteToHex(result);
-			} else {	//we have a '-' which means two addresses
-				int addr1, addr2;
-				string addr1str, addr2str;
-				addr1str = command.substr(0, (command.length() - pos - 1));		//keep only the first  value
-				addr2str = command.substr(pos + 1);	//keep only the second value
-
-				//get address
-				addr1 = GetAddrFromStr(addr1str);
-				addr2 = GetAddrFromStr(addr2str);
-				if (addr1 == -1) {
-					cout << "first address out of range (min: " << ADDRESS_MIN << ", max: " << ADDRESS_MAX << ")";
-					goto end;
-				}
-				if (addr2 == -1) {
-					cout << "second address out of range (min: " << ADDRESS_MIN << ", max: " << ADDRESS_MAX << ")";
-					goto end;
-				}
-
-				//output all values
-				//this way we can write forward and backwards. useful bc the stack grows downwards
-				byte current;
-				if (addr1 <= addr2) {
-					for (int addr = addr1; addr <= addr2; addr++) {
-						switch(destination) {	//haha yes O P T I M I S A T I O N
-							case 0:
-								current = _cpu->ReadMemory(addr);
-								break;
-							case 1:
-								current = _cpu->ReadVRAM(addr);
-								break;
-							case 2:
-								current = _cpu->ReadCRAM(addr);
-								break;
-							default:
-								throw std::exception();
-						}
-						cout << ByteToHex(current) << ' ';
-					}
-				} else {
-					for (int addr = addr1; addr >= addr2; addr--) {
-						switch(destination) {
-							case 0:
-								current = _cpu->ReadMemory(addr);
-								break;
-							case 1:
-								current = _cpu->ReadVRAM(addr);
-								break;
-							case 2:
-								current = _cpu->ReadCRAM(addr);
-								break;
-							default:
-								throw std::exception();
-						}
-						cout << ByteToHex(current) << ' ';
-					}
-				}
-			}
-			
-		}
-
-		//write to memory
-		else if (tokens.at(0) == "w") {
-
-			int destination = -69;
-			string addrstr;
-			string  valstr;
-			if (tokens.size() == 3) {
-				destination = 0;
-				addrstr = tokens.at(1);
-				valstr  = tokens.at(2);
-			} else if (tokens.size() == 4) {
-				addrstr = tokens.at(2);
-				valstr  = tokens.at(3);
-				if (tokens.at(1) == "v") destination = 1;	//vram
-				if (tokens.at(1) == "c") destination = 2;	//cram
-			} else {
-				throw;
-			}
-
-			//here we calculate the address the user asked
-			int addr = GetAddrFromStr(addrstr);
-
-			//here we find the value they want to write
-			auto val = GetByteFromStr(valstr);
-
-			//if we reached here we're good to go
-			WriteMemory(_cpu, addr, val, destination);	//this function ignores the write buffer
-			
-			goto updateDebugInfo;
-		}
-
-		//register loader
-		else if (tokens.at(0) == "reg") {
-			
-			auto name = tokens.at(1);				//get name of register
-
-			//oversimplified toupper function
-			for(int i = 0; i < name.length(); i++) {
-				if (name[i] >= 97) name[i] -= 32;
-			}
-
-			if (name == "HL") {
-				//it's the only 16bit register
-				int val = GetAddrFromStr(tokens.at(2));
-				if (val == -1) {
-					cout << "invalid: expected a number";
-					goto end;
-				}
-
-				//assign to HL
-				_cpu->HL = val;
-			}
-			else {
-
-				//this is for 8bit registers
-				int val = GetByteFromStr(tokens.at(2));
-
-				//assign the value to the register
-					if (name == "A") _cpu->A = val;
-				else if (name == "B") _cpu->B = val;
-				else if (name == "C") _cpu->C = val;
-				else if (name == "D") _cpu->D = val;
-				else if (name == "F") _cpu->F = val;
-				else if (name == "SP") _cpu->SP = val;
-				else {
-					//if this happens we don't want to update bc it clears the screen
-					cout << "invalid register '" << name << "'";
-					goto end;
-				}
-			}
-
-			//if no errors, update info
-			goto updateDebugInfo;
-		}
-
-		//breakpoint
-		else if (tokens.at(0) == "b") {
-
-			breakpointMode mode = execute;
-
-			bool _delete = false;		//are we trying to delete a breakpoint?
-
-			string modetoken;		//the token containing the mode (if any)
-			string addrtoken;		//the token containing the address
-			//this way the order does not matter
-			if (tokens.at(1).at(0) == '-') {			//we have a mode option as the first parameter
-				modetoken = tokens.at(1);
-				if (tokens.size() > 2)
-					addrtoken = tokens.at(2);
-			}
-			else if (tokens.size() > 2) {
-				if (tokens.at(2).at(0) == '-') {		//we have a mode option as the second parameter
-					modetoken = tokens.at(2);
-					addrtoken = tokens.at(1);
-				}
-			} else {
-				modetoken = "-e";			//use the default
-				addrtoken = tokens.at(1);
-			}
-
-			switch (modetoken.at(1)) {
-				case 'e':		//execute. it's the default anyways
-					break;
-				case 'w':
-					mode = write;
-					break;
-				case 'r':
-					mode = read;
-					break;
-				case 'd':
-					if (modetoken.length() > 2) {	//we don't want an indexoutofrange
-						if (modetoken.at(2) == 'a') {	//check if it says "-da"
-							breakpoints.clear();
-							cout << "cleared all breakpoints";
-							goto end;
-						}
-					}
-					_delete = true;
-					break;
-				case 'l':
-					foreach(bp, breakpoints) {
-						cout << WordToHex(bp.address) << " (" << BPModeToString(bp.mode) << ")\n";
-					}
-					goto end;
-				default:
-					cout << "invalid option for break point mode. type 'help' for a list\n";
-					goto end;
-			}
-
-			int addr = GetAddrFromStr(addrtoken);
-			if (addr == -1) {
-				cout << "address out of range (min: " << ADDRESS_MIN << ", max: " << ADDRESS_MAX << ")";
-				goto end;
-			}
-
-			if (_delete == true) {
-				//find if there is an element with that address
-
-				//lists in c++ are weird
-				list<BreakPoint>::iterator i = breakpoints.begin();
-				
-				foreach(bp, breakpoints) {
-					//we only check for the address bc we delete based on address only
-					//we found our element
-					if (bp.address == addr) {
-						breakpoints.erase(i);	//remove element
-						cout << "deleted one breakpoint at 0x" << WordToHex(addr);
-						goto end;	//jump to avoid problems, as we'll print an error at the end of the loop if the element is not found
-					}
-
-					advance(i, 1);		//increment i by one
-				}
-				//if we reach here we didn't find the element
-				cout << "no breakpoint found with address 0x" << WordToHex(addr);
-			}
-			else	//we want to add a breakpoint
-			{
-				//first we check if it exists already
-				//we compare both address and mode bc we can add multiple breakpoints at the same address but w different modes
-				list<BreakPoint>* ls = nullptr;
-				//TODO: add the breakpoint checking the destination
-				
-				foreach(bp, breakpoints) {
-					if (bp.address == addr && bp.mode == mode) {
-						cout << "there already is a breakpoint at 0x" << WordToHex(addr) << " with mode " << BPModeToString(mode);
-						goto end;	//jump to end
-					}
-				}
-
-				//set properties
-				BreakPoint bp;
-				bp.mode = mode;
-				bp.address = addr;
-
-				breakpoints.push_back(bp);	//add to the list
-
-				//write a confirmation message
-				cout << "added breakpoint at 0x" << WordToHex(addr) << " in " << BPModeToString(mode) << " mode";
+			if (command.name == tokens.at(0)) {
+				function = command.command_function;
+				break;
 			}
 		}
 
-		//disassembler
-		else if (tokens.at(0) == "dis") {
-			if (tokens.size() != 2) throw std::out_of_range("");
-			int addr;
-
-			addr = GetAddrFromStr(tokens.at(1));
-			if (addr == -1) {
-				std::cout << "addr out of range\n";
-				goto end;
-			}
-
-			string disassembly = codeToMnemonic(_cpu->ReadMemory(addr));
-
-			//we can't use the regular "addImmediateToDisassembly" so here's a modified one
-			{
-				int pos = disassembly.find('&');
-				while (pos != string::npos) {			//repeat until there are no '&' left
-					
-					//split the string in two so that the '&' is left out
-					string part1 = disassembly.substr(0, pos);
-					string part2 = disassembly.substr(pos + 1);
-
-					//it's a 16bit value so read next two bytes
-					byte b1 = _cpu->ReadMemory(addr + 1),		// low
-				 		 b2 = _cpu->ReadMemory(addr + 2);		// high
-					//the computer is little endian so we have to do b2 before b1
-					string addressStr = "0x" + ByteToHex(b2) + ByteToHex(b1);
-
-					//now the string has the address where it should be
-					disassembly = part1 + addressStr + part2;
-
-					pos = disassembly.find('&');
-				}
-				//then check for 8-bit
-				pos = disassembly.find('%');
-				while (pos != string::npos) {			//repeat until there are no '%' left
-					
-					//split the string in two so that the '%' is left out
-					string part1 = disassembly.substr(0, pos);
-					string part2 = disassembly.substr(pos + 1);
-
-					//it's an 8bit value so read next byte
-					byte b1 = _cpu->ReadMemory(addr + 1);
-					
-					string addressStr = "0x" + ByteToHex(b1);
-
-					//now the string has the address where it should be
-					disassembly = part1 + addressStr + part2;
-
-					pos = disassembly.find('%');
-				}
-			}
-
-			std::cout << ByteToHex(_cpu->ReadMemory(addr)) << " => " << disassembly << "\n";
-		}
-
-		//load rom
-		else if (tokens.at(0) == "load") {
-			if (LoadProgramToMemory(tokens.at(1), _cpu->base) == true) {
-				cout << "success!";
-				_cpu->reset();
-				SaveState(_cpu, -1);	//for the reset command
-				goto updateDebugInfo;
-			} else {
-				LoadFileErrorMsg();
-			}
-		}
-		//load state
-		else if (tokens.at(0) == "ls") {
-			//get first digit from char
-			int num;
-			//it's in a try because stoi can cause exceptions if the value received is bad
-			try
-			{
-				num = stoi(tokens.at(1));
-				if (num > 9 || num < 0) throw exception();
-			}
-			catch(exception) {
-				cout << "invalid number for state. expected a 0-9 value";
-				goto end;
-			}
-
-			if (LoadState(_cpu, num) == 0) {
-				cout << "loaded state";
-				dodebug = true;
-				goto updateDebugInfo;
-			} else {
-				cout << "could not load state";
-			}
-		}
-		//save state
-		else if (tokens.at(0) == "ss") {
-
-			int num;
-			//it's in a try because stoi can cause exceptions if the value received is bad
-			try
-			{
-				num = stoi(tokens.at(1));
-				if (num > 9 || num < 0) throw exception();
-			}
-			catch(exception) {
-				cout << "invalid number for state. expected a 0-9 value";
-				goto end;
-			}
-
-			if (SaveState(_cpu, num) == 0) {
-				cout << "saved state";
-			} else {
-				cout << "could not save state";
-			}
-		}
-
-		//jump
-		else if (tokens.at(0) == "jp") {
-			
-			int addr = GetAddrFromStr(tokens.at(1));
-			if (addr == -1) {
-				cout << "invalid address";
-				goto end;
-			}
-
-			_cpu->PC = addr;
-			dodebug = true;
-			goto updateDebugInfo;
-		}
-
-		//update screen
-		else if (command == "update") {
-			updatescreen(_cpu);
-			std::cout << "updated screen!\n";
-		}
-
-		//clear console
-		else if (tokens.at(0) == "cls") {
-
-			goto updateDebugInfo;	//calling this will first clear the screen, then print debug info again so the console is nice and clear
-		}
-
-		//run
-		else if (tokens.at(0) == "run") { dodebug = false; cls(); return; }
-
-		//reset
-		else if (tokens.at(0) == "reset") {
-			//reset is just a fancy load state
-
-			LoadState(_cpu, -1);		//the state -1 contains the machine at the beginning
-
-			dodebug = true;
-
-			goto updateDebugInfo;		//returning would also step once
-		}
-
-		else if (command == "69" || command == "420") cout << "nice";
-		else if (command == "69420") cout << "nice++";
-
-		//something we can't execute
-		else {
-		unknown_command:
+		//execute it, or a null command
+		if (function != NULL) {
+			auto command_retval = function(_cpu, tokens);
+		} else {
 			cout << "unknown command. write 'help' for a list of commands";
 		}
+
 	}
 	catch(...) {
 		cout << "invalid command parameters";
@@ -799,9 +295,558 @@ void Debugger::printdebug(CPU_T* _cpu) {
 
 	end:
 	cout << endl;   		//flush the cout and print a new line
-	goto askcommand;		//could just use a while(true) but this looks cooler
+	goto askcommand;		//could just use a while(true) but this looks cooler (and is an excuse to remove a layer of indentation)
 }
 
+// 		//command list
+// 		if (tokens.at(0) == "help") {
+// 			cout << "\n\n"
+// 					<< "pressing enter will repeat the last step-like instruction" << "\n"
+// 					<< "press esc while running to start debugging" << "\n\n"
+					
+// 					<< "commands:" << "\n"
+
+// 					<< "help                - list all commands" << "\n"
+// 					<< "help command        - get a descritpion of the syntax of the given command" << "\n"
+// //					<< "options             - list all options" << "\n"
+
+//  					<< "step                - execute the next instruction (short: 's')" << "\n"
+//  					<< "next                - execute the next instruction skipping over function calls (short: 'n')" << "\n"
+//  					<< "finish              - run until the end of the current function (short: 'f')" << "\n"
+
+// 					<< "cc                  - print the value of the counter" << "\n"
+// 					<< "cc reset            - print the value of the counter, then reset it" << "\n"
+
+// //					<< "set name val        - set the given option to the given value" << "\n"
+
+// 					<< "m [v/c] ADDR        - print the memory value at \"addr\"" << "\n"
+// 					<< "m [v/c] ADD1-ADD2   - print the values from \"add1\" to \"add2\"" << "\n"
+
+// 					<< "w [v/c] ADDR VAL    - write \"val\" to \"addr\"" << "\n"
+
+// 					<< "reg NAME VAL        - load \"val\" in the given register" << "\n"
+
+// 					<< "b [v/c] [mode] ADDR - set a breakpoint at \"addr\" (the mode is -e by default)" << "\n"
+// 						<< "                modes:" << "\n"
+// 						<< "                	'-e'  => on execution (default)" << "\n"
+// 						<< "                	'-r'  => on read" << "\n"
+// 						<< "                	'-w'  => on write" << "\n"
+// 						<< "                	'-l'  => list all breakpoints" << "\n"
+// 						<< "                	'-d'  => delete breakpoint" << "\n"
+// 						<< "                	'-da' => delete all breakpoints" << "\n"
+
+// 					<< "jp ADDR             - jump to the given address" << "\n"
+
+// 					<< "dis ADDR            - disassemble the opcode at the given address" << "\n"
+					
+// 					<< "ss NUM              - saves the state with the given number (0-9)" << "\n"
+// 					<< "ls NUM              - loads the state with the given number (0-9)" << "\n"
+
+// 					<< "load FILE           - loads the file's binary contents to memory, and restarts the CPU" << "\n"
+
+// 					<< "update              - force a screen update" << "\n"
+// 					<< "cls                 - clear the console" << "\n"
+
+// 					<< "run                 - continue running until next breakpoint" << "\n"
+// 					<< "reset               - reset the CPU" << "\n"
+// 					;
+// 		}
+// 		//options list
+// 		else if (tokens.at(0) == "options") {
+
+// 			cout << "\n"
+// 					<< "placeholder         - text"
+// 					;
+// 		}
+
+// 		//settings
+// 		else if (tokens.at(0) == "set") {
+// 			OptionsMenu(tokens);
+// 		}
+
+// 		//finish
+// 		else if (command == "finish" || command == "f") {
+// 			doBreakDepth = true;
+// 			breakAtDepth = callDepth - 1;	//we want to break when we get out of the function, so one level higher
+		
+// 			//exit from debug screen
+// 			dodebug = false;
+// 			cls();
+// 			return;
+// 		}
+
+// 		//finish
+// 		else if (command == "step" || command == "s") {
+// 			lastcommand = "s";
+// 			return;
+// 		}
+		
+// 		//next
+// 		else if (command == "next" || command == "n") {
+// 			lastcommand = "n";
+
+// 			doBreakDepth = true;
+// 			breakAtDepth = callDepth;	//we want to break at the next instruction, so same level. this way we can also skip funcs
+		
+// 			//exit from debug screen
+// 			dodebug = false;
+// 			cls();
+// 			return;
+// 		}
+
+// 		//clock counter
+// 		else if (tokens.at(0) == "cc") {
+// 			std::cout << _cpu->cyclecounter << "\n";
+
+// 			if (tokens.size() == 2 && tokens.at(1) == "reset")
+// 				_cpu->cyclecounter = 0;
+// 		}
+
+// 		//memory viewer
+// 		else if (tokens.at(0) == "m") {
+
+// 			if (tokens.size() < 2) {
+// 				cout << "invalid parameter number for 'm'";
+// 				goto end;
+// 			}
+
+// 			int destination = -1;	//0 is normal ram, 1 is vram, 2 is cram
+
+// 			if (tokens.size() == 2) {	//no specified destination, so second element is address
+// 				destination = 0;
+// 				command = tokens.at(1);
+// 			} else if (tokens.size() == 3) {	//address is third element bc destination is second
+// 				if (tokens.at(1) == "v") destination = 1;	//vram
+// 				if (tokens.at(1) == "c") destination = 2;	//cram
+// 				command = tokens.at(2);
+// 			}
+			
+// 			auto pos = command.find('-');		//find the first '-' symbol
+			
+// 			if (pos == string::npos) {		// if there is no '-' in the command it's a single address
+// 				int addr = GetAddrFromStr(command);
+
+// 				if (addr == -1) {	// an error occured in the function
+// 					cout << "address out of range (min: " << ADDRESS_MIN << ", max: " << ADDRESS_MAX << ")";
+// 					goto end;
+// 				}
+
+// 				byte result;
+// 				switch(destination) {
+// 					case 0:
+// 						result = _cpu->ReadMemory(addr);
+// 						break;
+// 					case 1:
+// 						result = _cpu->ReadVRAM(addr);
+// 						break;
+// 					case 2:
+// 						result = _cpu->ReadCRAM(addr);
+// 						break;
+// 					default:
+// 						throw std::exception();
+// 				}
+// 				cout << ByteToHex(result);
+// 			} else {	//we have a '-' which means two addresses
+// 				int addr1, addr2;
+// 				string addr1str, addr2str;
+// 				addr1str = command.substr(0, (command.length() - pos - 1));		//keep only the first  value
+// 				addr2str = command.substr(pos + 1);	//keep only the second value
+
+// 				//get address
+// 				addr1 = GetAddrFromStr(addr1str);
+// 				addr2 = GetAddrFromStr(addr2str);
+// 				if (addr1 == -1) {
+// 					cout << "first address out of range (min: " << ADDRESS_MIN << ", max: " << ADDRESS_MAX << ")";
+// 					goto end;
+// 				}
+// 				if (addr2 == -1) {
+// 					cout << "second address out of range (min: " << ADDRESS_MIN << ", max: " << ADDRESS_MAX << ")";
+// 					goto end;
+// 				}
+
+// 				//output all values
+// 				//this way we can write forward and backwards. useful bc the stack grows downwards
+// 				byte current;
+// 				if (addr1 <= addr2) {
+// 					for (int addr = addr1; addr <= addr2; addr++) {
+// 						switch(destination) {	//haha yes O P T I M I S A T I O N
+// 							case 0:
+// 								current = _cpu->ReadMemory(addr);
+// 								break;
+// 							case 1:
+// 								current = _cpu->ReadVRAM(addr);
+// 								break;
+// 							case 2:
+// 								current = _cpu->ReadCRAM(addr);
+// 								break;
+// 							default:
+// 								throw std::exception();
+// 						}
+// 						cout << ByteToHex(current) << ' ';
+// 					}
+// 				} else {
+// 					for (int addr = addr1; addr >= addr2; addr--) {
+// 						switch(destination) {
+// 							case 0:
+// 								current = _cpu->ReadMemory(addr);
+// 								break;
+// 							case 1:
+// 								current = _cpu->ReadVRAM(addr);
+// 								break;
+// 							case 2:
+// 								current = _cpu->ReadCRAM(addr);
+// 								break;
+// 							default:
+// 								throw std::exception();
+// 						}
+// 						cout << ByteToHex(current) << ' ';
+// 					}
+// 				}
+// 			}
+			
+// 		}
+
+// 		//write to memory
+// 		else if (tokens.at(0) == "w") {
+
+// 			int destination = -69;
+// 			string addrstr;
+// 			string  valstr;
+// 			if (tokens.size() == 3) {
+// 				destination = 0;
+// 				addrstr = tokens.at(1);
+// 				valstr  = tokens.at(2);
+// 			} else if (tokens.size() == 4) {
+// 				addrstr = tokens.at(2);
+// 				valstr  = tokens.at(3);
+// 				if (tokens.at(1) == "v") destination = 1;	//vram
+// 				if (tokens.at(1) == "c") destination = 2;	//cram
+// 			} else {
+// 				throw;
+// 			}
+
+// 			//here we calculate the address the user asked
+// 			int addr = GetAddrFromStr(addrstr);
+
+// 			//here we find the value they want to write
+// 			auto val = GetByteFromStr(valstr);
+
+// 			//if we reached here we're good to go
+// 			WriteMemory(_cpu, addr, val, destination);	//this function ignores the write buffer
+			
+// 			goto updateDebugInfo;
+// 		}
+
+// 		//register loader
+// 		else if (tokens.at(0) == "reg") {
+			
+// 			auto name = tokens.at(1);				//get name of register
+
+// 			//oversimplified toupper function
+// 			for(int i = 0; i < name.length(); i++) {
+// 				if (name[i] >= 97) name[i] -= 32;
+// 			}
+
+// 			if (name == "HL") {
+// 				//it's the only 16bit register
+// 				int val = GetAddrFromStr(tokens.at(2));
+// 				if (val == -1) {
+// 					cout << "invalid: expected a number";
+// 					goto end;
+// 				}
+
+// 				//assign to HL
+// 				_cpu->HL = val;
+// 			}
+// 			else {
+
+// 				//this is for 8bit registers
+// 				int val = GetByteFromStr(tokens.at(2));
+
+// 				//assign the value to the register
+// 					if (name == "A") _cpu->A = val;
+// 				else if (name == "B") _cpu->B = val;
+// 				else if (name == "C") _cpu->C = val;
+// 				else if (name == "D") _cpu->D = val;
+// 				else if (name == "F") _cpu->F = val;
+// 				else if (name == "SP") _cpu->SP = val;
+// 				else {
+// 					//if this happens we don't want to update bc it clears the screen
+// 					cout << "invalid register '" << name << "'";
+// 					goto end;
+// 				}
+// 			}
+
+// 			//if no errors, update info
+// 			goto updateDebugInfo;
+// 		}
+
+// 		//breakpoint
+// 		else if (tokens.at(0) == "b") {
+
+// 			breakpointMode mode = execute;
+
+// 			bool _delete = false;		//are we trying to delete a breakpoint?
+
+// 			string modetoken;		//the token containing the mode (if any)
+// 			string addrtoken;		//the token containing the address
+// 			//this way the order does not matter
+// 			if (tokens.at(1).at(0) == '-') {			//we have a mode option as the first parameter
+// 				modetoken = tokens.at(1);
+// 				if (tokens.size() > 2)
+// 					addrtoken = tokens.at(2);
+// 			}
+// 			else if (tokens.size() > 2) {
+// 				if (tokens.at(2).at(0) == '-') {		//we have a mode option as the second parameter
+// 					modetoken = tokens.at(2);
+// 					addrtoken = tokens.at(1);
+// 				}
+// 			} else {
+// 				modetoken = "-e";			//use the default
+// 				addrtoken = tokens.at(1);
+// 			}
+
+// 			switch (modetoken.at(1)) {
+// 				case 'e':		//execute. it's the default anyways
+// 					break;
+// 				case 'w':
+// 					mode = write;
+// 					break;
+// 				case 'r':
+// 					mode = read;
+// 					break;
+// 				case 'd':
+// 					if (modetoken.length() > 2) {	//we don't want an indexoutofrange
+// 						if (modetoken.at(2) == 'a') {	//check if it says "-da"
+// 							breakpoints.clear();
+// 							cout << "cleared all breakpoints";
+// 							goto end;
+// 						}
+// 					}
+// 					_delete = true;
+// 					break;
+// 				case 'l':
+// 					foreach(bp, breakpoints) {
+// 						cout << WordToHex(bp.address) << " (" << BPModeToString(bp.mode) << ")\n";
+// 					}
+// 					goto end;
+// 				default:
+// 					cout << "invalid option for break point mode. type 'help' for a list\n";
+// 					goto end;
+// 			}
+
+// 			int addr = GetAddrFromStr(addrtoken);
+// 			if (addr == -1) {
+// 				cout << "address out of range (min: " << ADDRESS_MIN << ", max: " << ADDRESS_MAX << ")";
+// 				goto end;
+// 			}
+
+// 			if (_delete == true) {
+// 				//find if there is an element with that address
+
+// 				//lists in c++ are weird
+// 				list<BreakPoint>::iterator i = breakpoints.begin();
+				
+// 				foreach(bp, breakpoints) {
+// 					//we only check for the address bc we delete based on address only
+// 					//we found our element
+// 					if (bp.address == addr) {
+// 						breakpoints.erase(i);	//remove element
+// 						cout << "deleted one breakpoint at 0x" << WordToHex(addr);
+// 						goto end;	//jump to avoid problems, as we'll print an error at the end of the loop if the element is not found
+// 					}
+
+// 					advance(i, 1);		//increment i by one
+// 				}
+// 				//if we reach here we didn't find the element
+// 				cout << "no breakpoint found with address 0x" << WordToHex(addr);
+// 			}
+// 			else	//we want to add a breakpoint
+// 			{
+// 				//first we check if it exists already
+// 				//we compare both address and mode bc we can add multiple breakpoints at the same address but w different modes
+// 				list<BreakPoint>* ls = nullptr;
+// 				//TODO: add the breakpoint checking the destination
+				
+// 				foreach(bp, breakpoints) {
+// 					if (bp.address == addr && bp.mode == mode) {
+// 						cout << "there already is a breakpoint at 0x" << WordToHex(addr) << " with mode " << BPModeToString(mode);
+// 						goto end;	//jump to end
+// 					}
+// 				}
+
+// 				//set properties
+// 				BreakPoint bp;
+// 				bp.mode = mode;
+// 				bp.address = addr;
+
+// 				breakpoints.push_back(bp);	//add to the list
+
+// 				//write a confirmation message
+// 				cout << "added breakpoint at 0x" << WordToHex(addr) << " in " << BPModeToString(mode) << " mode";
+// 			}
+// 		}
+
+// 		//disassembler
+// 		else if (tokens.at(0) == "dis") {
+// 			if (tokens.size() != 2) throw std::out_of_range("");
+// 			int addr;
+
+// 			addr = GetAddrFromStr(tokens.at(1));
+// 			if (addr == -1) {
+// 				std::cout << "addr out of range\n";
+// 				goto end;
+// 			}
+
+// 			string disassembly = codeToMnemonic(_cpu->ReadMemory(addr));
+
+// 			//we can't use the regular "addImmediateToDisassembly" so here's a modified one
+// 			{
+// 				int pos = disassembly.find('&');
+// 				while (pos != string::npos) {			//repeat until there are no '&' left
+					
+// 					//split the string in two so that the '&' is left out
+// 					string part1 = disassembly.substr(0, pos);
+// 					string part2 = disassembly.substr(pos + 1);
+
+// 					//it's a 16bit value so read next two bytes
+// 					byte b1 = _cpu->ReadMemory(addr + 1),		// low
+// 				 		 b2 = _cpu->ReadMemory(addr + 2);		// high
+// 					//the computer is little endian so we have to do b2 before b1
+// 					string addressStr = "0x" + ByteToHex(b2) + ByteToHex(b1);
+
+// 					//now the string has the address where it should be
+// 					disassembly = part1 + addressStr + part2;
+
+// 					pos = disassembly.find('&');
+// 				}
+// 				//then check for 8-bit
+// 				pos = disassembly.find('%');
+// 				while (pos != string::npos) {			//repeat until there are no '%' left
+					
+// 					//split the string in two so that the '%' is left out
+// 					string part1 = disassembly.substr(0, pos);
+// 					string part2 = disassembly.substr(pos + 1);
+
+// 					//it's an 8bit value so read next byte
+// 					byte b1 = _cpu->ReadMemory(addr + 1);
+					
+// 					string addressStr = "0x" + ByteToHex(b1);
+
+// 					//now the string has the address where it should be
+// 					disassembly = part1 + addressStr + part2;
+
+// 					pos = disassembly.find('%');
+// 				}
+// 			}
+
+// 			std::cout << ByteToHex(_cpu->ReadMemory(addr)) << " => " << disassembly << "\n";
+// 		}
+
+// 		//load rom
+// 		else if (tokens.at(0) == "load") {
+// 			if (LoadProgramToMemory(tokens.at(1), _cpu->base) == true) {
+// 				cout << "success!";
+// 				_cpu->reset();
+// 				SaveState(_cpu, -1);	//for the reset command
+// 				goto updateDebugInfo;
+// 			} else {
+// 				LoadFileErrorMsg();
+// 			}
+// 		}
+// 		//load state
+// 		else if (tokens.at(0) == "ls") {
+// 			//get first digit from char
+// 			int num;
+// 			//it's in a try because stoi can cause exceptions if the value received is bad
+// 			try
+// 			{
+// 				num = stoi(tokens.at(1));
+// 				if (num > 9 || num < 0) throw exception();
+// 			}
+// 			catch(exception) {
+// 				cout << "invalid number for state. expected a 0-9 value";
+// 				goto end;
+// 			}
+
+// 			if (LoadState(_cpu, num) == 0) {
+// 				cout << "loaded state";
+// 				dodebug = true;
+// 				goto updateDebugInfo;
+// 			} else {
+// 				cout << "could not load state";
+// 			}
+// 		}
+// 		//save state
+// 		else if (tokens.at(0) == "ss") {
+
+// 			int num;
+// 			//it's in a try because stoi can cause exceptions if the value received is bad
+// 			try
+// 			{
+// 				num = stoi(tokens.at(1));
+// 				if (num > 9 || num < 0) throw exception();
+// 			}
+// 			catch(exception) {
+// 				cout << "invalid number for state. expected a 0-9 value";
+// 				goto end;
+// 			}
+
+// 			if (SaveState(_cpu, num) == 0) {
+// 				cout << "saved state";
+// 			} else {
+// 				cout << "could not save state";
+// 			}
+// 		}
+
+// 		//jump
+// 		else if (tokens.at(0) == "jp") {
+			
+// 			int addr = GetAddrFromStr(tokens.at(1));
+// 			if (addr == -1) {
+// 				cout << "invalid address";
+// 				goto end;
+// 			}
+
+// 			_cpu->PC = addr;
+// 			dodebug = true;
+// 			goto updateDebugInfo;
+// 		}
+
+// 		//update screen
+// 		else if (command == "update") {
+// 			updatescreen(_cpu);
+// 			std::cout << "updated screen!\n";
+// 		}
+
+// 		//clear console
+// 		else if (tokens.at(0) == "cls") {
+
+// 			goto updateDebugInfo;	//calling this will first clear the screen, then print debug info again so the console is nice and clear
+// 		}
+
+// 		//run
+// 		else if (tokens.at(0) == "run") { dodebug = false; cls(); return; }
+
+// 		//reset
+// 		else if (tokens.at(0) == "reset") {
+// 			//reset is just a fancy load state
+
+// 			LoadState(_cpu, -1);		//the state -1 contains the machine at the beginning
+
+// 			dodebug = true;
+
+// 			goto updateDebugInfo;		//returning would also step once
+// 		}
+
+// 		else if (command == "69" || command == "420") cout << "nice";
+// 		else if (command == "69420") cout << "nice++";
+
+// 		//something we can't execute
+// 		else {
+// 		unknown_command:
+// 			cout << "unknown command. write 'help' for a list of commands";
+// 		}
 
 // -1 is a special save state used by the reset command
 int LoadState(CPU_T* _cpu, int num) {
@@ -925,3 +970,24 @@ void OptionsMenu(vector<string> command) {
 	unknownValue:	//reached when we have an invalid value request for a KNOWN option
 	cout << "invalid value '" << optionval << "' for option '" << optionname << "'";
 }
+
+
+
+command_return_t cmd_help(CPU_T* cpu, vector<string> params) {
+	cout << "\n\n"
+		 << "pressing enter will repeat the last step-like instruction" << "\n"
+ 		 << "press esc while running to start debugging" << "\n\n"
+
+ 		 << "commands:" << "\n";
+
+	foreach (command, commands) {
+		cout << command.description_short;
+	}
+
+	return crt_none;
+}
+
+//all available commands
+debugger_command_t commands[] = {
+	{"help", NULL, cmd_help, "list all commands, or describe a specific one", NULL, "help [command]"},
+};
