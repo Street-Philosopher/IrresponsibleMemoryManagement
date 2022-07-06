@@ -375,7 +375,7 @@ void Debugger::printdebug(CPU_T* _cpu) {
 // 			return;
 // 		}
 
-// 		//finish
+// 		//step
 // 		else if (command == "step" || command == "s") {
 // 			lastcommand = "s";
 // 			return;
