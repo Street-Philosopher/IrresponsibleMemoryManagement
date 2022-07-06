@@ -4,7 +4,7 @@
 #define _SILENCE_EXPERIMENTAL_FILESYSTEM_DEPRECATION_WARNING
 #define _CRT_SECURE_NO_WARNINGS
 
-#include <experimental/filesystem>		//to check/create directories
+#include <filesystem>		//to check/create directories
 #include <sstream>
 #include <list>
 
@@ -23,30 +23,101 @@ using std::endl;
 using std::getline;
 
 
-//todo: better breakpoint checking, fare cose per gli altri due tipi di ram, help specifico
-//TODO: make commands less bad
+//todo: better breakpoint checking, fare cose per gli altri due tipi di ram, call stack backtrace
 
 
-struct debugger_command_t;
-enum command_return_t { crt_none, crt_exit_debugger, crt_execution_error, crt_param_error };
-typedef command_return_t (*CommandFunc_t)(CPU_T* cpu, vector<string> params);
+void PrintDebug(string msg) {
+	cout << "DEBUG: " << msg << endl;
+}
+
+
+// struct debugger_command_t;
 //possible return values of the command
+enum command_return_t { crt_none, crt_return, crt_continue_execution };
+typedef command_return_t (*command_function_t)(CPU_T* cpu, vector<string> params);
+
+#define cmd_function(name) command_return_t name(CPU_T* cpu, vector<string> params)
+#define cmd_alias(name) {name, (debugger_command_t*)1, NULL, "", "", "" }
+
 typedef struct debugger_command_t {
 
 	//command to write
 	string name;
 
-	//we will first check if this is not null. if it isn't, we will ignore the other two as this is an alternative for another command, we will execute the parent command
-	debugger_command_t* parent_command = NULL;
+	// //we will first check if this is not null. if it isn't, we will ignore the other two as this is an alternative for another command, we will execute the parent command
+	// debugger_command_t* parent_command = NULL;
 	
 	//function to execute
-	CommandFunc_t command_function;
+	command_function_t command_function;
 
 	//for the help menu. short is for general, long is for specific
 	string description_short, description_long;
 	string parameter_description;
 
+	bool operator==(debugger_command_t sc) {
+		return name == sc.name;
+	}
+
 } command_t;
+debugger_command_t null_command = { "", NULL, "", "", "" };
+
+//command functions declaration
+cmd_function(cmd_help);
+cmd_function(cmd_quit);
+cmd_function(cmd_cc);
+cmd_function(cmd_step);
+cmd_function(cmd_next);
+cmd_function(cmd_finish);
+cmd_function(cmd_memview);
+cmd_function(cmd_memwrite);
+cmd_function(cmd_reg_write);
+cmd_function(cmd_jump);
+cmd_function(cmd_breakpoint);
+cmd_function(cmd_breakpoint_delete);
+cmd_function(cmd_breakpoint_list);
+
+//all commands
+debugger_command_t commands[] = {
+	{"help", cmd_help, "list all commands, or describe a specific one", "", "[command]"},
+	{"quit", cmd_quit, "exit the emulator", "", "/ exit"},
+	// cmd_alias("exit"),
+
+	{"cc", cmd_cc, "print the value of the clock counter", "print the value of the clock counter. adding \"reset\" will also reset it to zero", "[reset]"},
+
+	{"step", cmd_step, "step to the next instruction, going into function calls", "", "/ s"},
+	// cmd_alias("s"),
+	{"next", cmd_next, "step to the next instruction, skipping over function calls", "", "/ n"},
+	// cmd_alias("n"),
+	{"finish", cmd_finish, "run until the end of the function", "", "/ f"},
+	// cmd_alias("f")
+
+	{"m", cmd_memview, "print the memory value at ADDR", "print the value of the memory at the given ADDRess. specifying 'v' or 'c' as parameters will select which memory to look at (VRAM or CRAM)", "[v/c] ADDR"},
+	{"m", cmd_memview, "print the memory values from ADDR1 to ADDR2", "print all the values in the given memory interval. specifying 'v' or 'c' as parameters will select which memory to look at (VRAM or CRAM)", "[v/c] ADDR"},
+
+	{"w", cmd_memwrite, "write VAL to ADDR", "write the given VALue to the specified ADDRess. you can specify 'v' or 'c' to write to VRAM or Cram", "[v/c] ADDR VAL"},
+
+	{"reg", cmd_reg_write, "load VAL in the given register", "load the given VALue in any of the REGisters. the registers are:\ngeneral purpose, 8bit:\n\tA, B, C, D, H, L\ngeneral purpose, 16bit:\n\tHL\nSP (stack pointer, 8bit)\nF  (flags, 8bit)", "NAME VAL"},
+	{"jp", cmd_jump, "set the Program Counter to the given ADDRess", "", "ADDR"},
+
+	{"break" , cmd_breakpoint, "add a breakpoint at the given ADDRess", "add a breakpoint at the given ADDRess.\nyou can specify a breakpoint mode:\n\t-e: the default mode, will trigger on execution\n\t-w: will trigger on write\n\t-r: will trigger on read\n\nyou can also specify 'v' or 'c' to add the breakpoint in VRAM or CRAM", "[v/c] [mode] ADDR"},
+	{"remove", cmd_breakpoint_delete, "remove the breakpoint at the specified ADDRess", "remove all breakpoints at the specified ADDRess, or specify a mode to remove only those.\nyou can specify 'v' if the breakpoint is in VRAM or 'c' if it's in CRAM.\nwriting 'all' in place of the address will remove all breakpoints, at all addresses", "[v/c] [mode] ADDR"},
+	{"list",   cmd_breakpoint_list, "list all existing breakpoints", "", ""},
+};
+debugger_command_t GetDebuggerCommand(string name) {
+
+	foreach (command, commands) {
+		//TODO: make aliases work
+		// while (command.parent_command != NULL) {
+		// 	command = *command.parent_command;
+		// }
+
+		if (command.name == name) {
+			return command;
+		}
+	}
+
+	return null_command;
+}
 
 
 // when we press enter without a command this will be repeated
@@ -98,8 +169,19 @@ void Debugger::DebugInit(CPU_T* CPU) {
 	system(command.c_str());
 	cls();
 
+	// //initialise the parent commands
+	// int i = 0;
+	// foreach(command, commands) {
+		
+	// 	if (command.parent_command != NULL) {
+	// 		command.parent_command = &(commands[i - 1]);
+	// 	}
+		
+	// 	i++;
+	// }
+
 	//if the folder doesn't exist, create it
-	namespace fs = std::experimental::filesystem;
+	namespace fs = std::filesystem;
 	if (!fs::is_directory("saveStates") || !fs::exists("saveStates")) {
 		fs::create_directory("saveStates");
 	}
@@ -165,7 +247,7 @@ void OptionsMenu(vector<string> command);
 
 
 //this way we can ignore the buffer
-void WriteMemory(CPU_T* CPU, word address, byte value, int destination) {
+void WriteMemory_ignorebuffer(CPU_T* CPU, word address, byte value, int destination) {
 	switch (destination) {
 		case 0:
 			CPU->base[address & 0xFFFF] = value;
@@ -250,6 +332,7 @@ void UpdateDebugInfo(CPU_T* _cpu) {
 	
 	cout.flush();
 }
+
 void Debugger::printdebug(CPU_T* _cpu) {
 
 	//do it before anything as we don't want to repeat it in the debugger
@@ -266,26 +349,42 @@ void Debugger::printdebug(CPU_T* _cpu) {
 	
 	auto tokens = splitString(command);
 
+	// PrintDebug("going into tryexcept");
+
 	try
 	{
+		// PrintDebug("finding command...");
 		//find the command to execute
-		CommandFunc_t function = NULL;
-		foreach (command, commands) {
-			while (command.parent_command != NULL) {
-				command = *command.parent_command;
-			}
+		command_function_t function = GetDebuggerCommand(tokens.at(0)).command_function;
 
-			if (command.name == tokens.at(0)) {
-				function = command.command_function;
-				break;
-			}
-		}
-
+		// PrintDebug("about to execute...");
+		command_return_t command_retval;
 		//execute it, or a null command
 		if (function != NULL) {
-			auto command_retval = function(_cpu, tokens);
+
+			// PrintDebug("function is not null...");
+			command_retval = function(_cpu, tokens);
+
 		} else {
+
+			// PrintDebug("function is null...");
+			command_retval = crt_none;
 			cout << "unknown command. write 'help' for a list of commands";
+		}
+
+		// PrintDebug("managing retval...");
+		switch (command_retval) {
+			//nothing
+			case crt_none:
+				break;
+			//exit and continue execution
+			case crt_continue_execution:
+				dodebug = false;
+				cls();
+				return;
+			//return
+			case crt_return:
+				return;
 		}
 
 	}
@@ -297,6 +396,103 @@ void Debugger::printdebug(CPU_T* _cpu) {
 	cout << endl;   		//flush the cout and print a new line
 	goto askcommand;		//could just use a while(true) but this looks cooler (and is an excuse to remove a layer of indentation)
 }
+
+
+// -1 is a special save state used by the reset command
+int LoadState(CPU_T* _cpu, int num) {
+	try
+	{
+		if (num < -1 || num > 9) throw; //error out of range
+
+		string filename;
+		if (num != -1) {
+			filename = ssFolder + "state.ss";
+			filename += to_string(num);
+		} else filename = ssFolder + "reset.ss";
+		
+		FILE* f;
+		//try to open file, raise exception if it does not exist
+		if (!(f = fopen(filename.c_str(), "rb"))) {
+			throw;
+		}
+		fseek(f, 0, SEEK_SET);					//place at beginning
+
+		//get the ram
+		fread(_cpu->base, 1, 0x10000, f);
+
+		//get vram
+		fread(_cpu->vramBase, 1, 0x10000, f);
+		
+		//get cram
+		fread(_cpu->cramBase, 1, 0x100, f);
+		
+		//get registers
+		fread(&_cpu->A,  1, sizeof(byte), f);
+		fread(&_cpu->B,  1, sizeof(byte), f);
+		fread(&_cpu->C,  1, sizeof(byte), f);
+		fread(&_cpu->D,  1, sizeof(byte), f);
+		fread(&_cpu->F,  1, sizeof(byte), f);
+		fread(&_cpu->HL, 1, sizeof(word), f);
+		fread(&_cpu->SP, 1, sizeof(byte), f);
+		fread(&_cpu->PC, 1, sizeof(word), f);
+
+		//get debugger stuff
+		fread(&_cpu->cyclecounter, 1, sizeof(_cpu->cyclecounter), f);
+
+		//screen
+		LoadScreen(filename);
+
+		fclose(f);
+		return 0;
+	}
+	catch (exception) { return -1; }
+}
+// -1 is a special save state used by the reset command
+int SaveState(CPU_T* _cpu, int num) {
+	try {
+		if (num < -1 || num > 9) throw;
+
+		string filename;
+		if (num != -1) {
+			filename = ssFolder + "state.ss";
+			filename += to_string(num);
+		} else filename = ssFolder + "reset.ss";
+
+		FILE* f = fopen(filename.c_str(), "wb");		//get file
+		fseek(f, 0, SEEK_SET);					//place at beginning
+
+		//get the ram
+		fwrite(_cpu->base, 1, 0x10000, f);
+
+		//get vram
+		fwrite(_cpu->vramBase, 1, 0x10000, f);
+		
+		//get cram
+		fwrite(_cpu->cramBase, 1, 0x100, f);
+
+		//get registers
+		fwrite(&_cpu->A,  1, sizeof(byte), f);
+		fwrite(&_cpu->B,  1, sizeof(byte), f);
+		fwrite(&_cpu->C,  1, sizeof(byte), f);
+		fwrite(&_cpu->D,  1, sizeof(byte), f);
+		fwrite(&_cpu->F,  1, sizeof(byte), f);
+		fwrite(&_cpu->HL, 1, sizeof(word), f);
+		fwrite(&_cpu->SP, 1, sizeof(byte), f);
+		fwrite(&_cpu->PC, 1, sizeof(word), f);
+
+		//debugger stuff
+		fwrite(&_cpu->cyclecounter, 1, sizeof(_cpu->cyclecounter), f);
+
+		//screen
+		SaveScreen(filename);
+
+		fclose(f);
+		return 0;
+	}
+	catch (exception) { return -1; }
+}
+
+
 
 // 		//command list
 // 		if (tokens.at(0) == "help") {
@@ -375,7 +571,7 @@ void Debugger::printdebug(CPU_T* _cpu) {
 // 			return;
 // 		}
 
-// 		//finish
+// 		//step
 // 		else if (command == "step" || command == "s") {
 // 			lastcommand = "s";
 // 			return;
@@ -443,7 +639,7 @@ void Debugger::printdebug(CPU_T* _cpu) {
 // 						result = _cpu->ReadCRAM(addr);
 // 						break;
 // 					default:
-// 						throw std::exception();
+// 						throw;
 // 				}
 // 				cout << ByteToHex(result);
 // 			} else {	//we have a '-' which means two addresses
@@ -480,7 +676,7 @@ void Debugger::printdebug(CPU_T* _cpu) {
 // 								current = _cpu->ReadCRAM(addr);
 // 								break;
 // 							default:
-// 								throw std::exception();
+// 								throw;
 // 						}
 // 						cout << ByteToHex(current) << ' ';
 // 					}
@@ -497,7 +693,7 @@ void Debugger::printdebug(CPU_T* _cpu) {
 // 								current = _cpu->ReadCRAM(addr);
 // 								break;
 // 							default:
-// 								throw std::exception();
+// 								throw;
 // 						}
 // 						cout << ByteToHex(current) << ' ';
 // 					}
@@ -534,7 +730,7 @@ void Debugger::printdebug(CPU_T* _cpu) {
 // 			//if we reached here we're good to go
 // 			WriteMemory(_cpu, addr, val, destination);	//this function ignores the write buffer
 			
-// 			goto updateDebugInfo;
+// 			UpdateDebugInfo(_cpu);
 // 		}
 
 // 		//register loader
@@ -578,7 +774,7 @@ void Debugger::printdebug(CPU_T* _cpu) {
 // 			}
 
 // 			//if no errors, update info
-// 			goto updateDebugInfo;
+// 			UpdateDebugInfo(_cpu);
 // 		}
 
 // 		//breakpoint
@@ -746,10 +942,10 @@ void Debugger::printdebug(CPU_T* _cpu) {
 // 		//load rom
 // 		else if (tokens.at(0) == "load") {
 // 			if (LoadProgramToMemory(tokens.at(1), _cpu->base) == true) {
-// 				cout << "success!";
 // 				_cpu->reset();
 // 				SaveState(_cpu, -1);	//for the reset command
-// 				goto updateDebugInfo;
+// 				UpdateDebugInfo(_cpu);
+// 				cout << "success!";
 // 			} else {
 // 				LoadFileErrorMsg();
 // 			}
@@ -770,9 +966,9 @@ void Debugger::printdebug(CPU_T* _cpu) {
 // 			}
 
 // 			if (LoadState(_cpu, num) == 0) {
-// 				cout << "loaded state";
 // 				dodebug = true;
-// 				goto updateDebugInfo;
+// 				UpdateDebugInfo(_cpu);
+// 				cout << "Succesfully loaded state!";
 // 			} else {
 // 				cout << "could not load state";
 // 			}
@@ -810,7 +1006,7 @@ void Debugger::printdebug(CPU_T* _cpu) {
 
 // 			_cpu->PC = addr;
 // 			dodebug = true;
-// 			goto updateDebugInfo;
+// 			UpdateDebugInfo(_cpu);
 // 		}
 
 // 		//update screen
@@ -822,7 +1018,7 @@ void Debugger::printdebug(CPU_T* _cpu) {
 // 		//clear console
 // 		else if (tokens.at(0) == "cls") {
 
-// 			goto updateDebugInfo;	//calling this will first clear the screen, then print debug info again so the console is nice and clear
+// 			UpdateDebugInfo(_cpu);	//calling this will first clear the screen, then print debug info again so the console is nice and clear
 // 		}
 
 // 		//run
@@ -836,7 +1032,7 @@ void Debugger::printdebug(CPU_T* _cpu) {
 
 // 			dodebug = true;
 
-// 			goto updateDebugInfo;		//returning would also step once
+// 			UpdateDebugInfo(_cpu);		//returning would also step once
 // 		}
 
 // 		else if (command == "69" || command == "420") cout << "nice";
@@ -848,146 +1044,368 @@ void Debugger::printdebug(CPU_T* _cpu) {
 // 			cout << "unknown command. write 'help' for a list of commands";
 // 		}
 
-// -1 is a special save state used by the reset command
-int LoadState(CPU_T* _cpu, int num) {
-	try
-	{
-		if (num < -1 || num > 9) throw exception(); //error out of range
+cmd_function(cmd_help) {
 
-		string filename;
-		if (num != -1) {
-			filename = ssFolder + "state.ss";
-			filename += to_string(num);
-		} else filename = ssFolder + "reset.ss";
-		
-		FILE* f;
-		//try to open file, raise exception if it does not exist
-		if (!(f = fopen(filename.c_str(), "rb"))) {
-			throw exception();
+	//general help
+	if (params.size() == 1) {
+
+		cout << "\n\n"
+
+			// TODO: "step-like" is not really intuitive as a description
+			<< "pressing enter will repeat the last step-like instruction" << "\n"
+			<< "press esc while running to start debugging" << "\n\n"
+
+			<< "commands:" << "\n";
+
+		foreach (command, commands) {
+			cout << command.name << " " << command.parameter_description << ": " << command.description_short << "\n";
 		}
-		fseek(f, 0, SEEK_SET);					//place at beginning
+	
+	//specific help
+	} else {
 
-		//get the ram
-		fread(_cpu->base, 1, 0x10000, f);
+		auto command = GetDebuggerCommand(params.at(1));
+		if (command == null_command) {
 
-		//get vram
-		fread(_cpu->vramBase, 1, 0x10000, f);
-		
-		//get cram
-		fread(_cpu->cramBase, 1, 0x100, f);
-		
-		//get registers
-		fread(&_cpu->A,  1, sizeof(byte), f);
-		fread(&_cpu->B,  1, sizeof(byte), f);
-		fread(&_cpu->C,  1, sizeof(byte), f);
-		fread(&_cpu->D,  1, sizeof(byte), f);
-		fread(&_cpu->F,  1, sizeof(byte), f);
-		fread(&_cpu->HL, 1, sizeof(word), f);
-		fread(&_cpu->SP, 1, sizeof(byte), f);
-		fread(&_cpu->PC, 1, sizeof(word), f);
+			cout << "unknown command \"" << params.at(1) << "\". type \"help\" for a list of commands";
 
-		//get debugger stuff
-		fread(&_cpu->cyclecounter, 1, sizeof(_cpu->cyclecounter), f);
+		} else {
 
-		//screen
-		LoadScreen(filename);
+			//we already get the top parent command, not the aliases, so we don't worry about those
 
-		fclose(f);
-		return 0;
-	}
-	catch (exception) { return -1; }
-}
-// -1 is a special save state used by the reset command
-int SaveState(CPU_T* _cpu, int num) {
-	try {
-		if (num < -1 || num > 9) throw exception();
+			string descToPrint;
+			if (command.description_long == "")
+				descToPrint = command.description_short;
+			else
+				descToPrint = command.description_long;
 
-		string filename;
-		if (num != -1) {
-			filename = ssFolder + "state.ss";
-			filename += to_string(num);
-		} else filename = ssFolder + "reset.ss";
-
-		FILE* f = fopen(filename.c_str(), "wb");		//get file
-		fseek(f, 0, SEEK_SET);					//place at beginning
-
-		//get the ram
-		fwrite(_cpu->base, 1, 0x10000, f);
-
-		//get vram
-		fwrite(_cpu->vramBase, 1, 0x10000, f);
-		
-		//get cram
-		fwrite(_cpu->cramBase, 1, 0x100, f);
-
-		//get registers
-		fwrite(&_cpu->A,  1, sizeof(byte), f);
-		fwrite(&_cpu->B,  1, sizeof(byte), f);
-		fwrite(&_cpu->C,  1, sizeof(byte), f);
-		fwrite(&_cpu->D,  1, sizeof(byte), f);
-		fwrite(&_cpu->F,  1, sizeof(byte), f);
-		fwrite(&_cpu->HL, 1, sizeof(word), f);
-		fwrite(&_cpu->SP, 1, sizeof(byte), f);
-		fwrite(&_cpu->PC, 1, sizeof(word), f);
-
-		//debugger stuff
-		fwrite(&_cpu->cyclecounter, 1, sizeof(_cpu->cyclecounter), f);
-
-		//screen
-		SaveScreen(filename);
-
-		fclose(f);
-		return 0;
-	}
-	catch (exception) { return -1; }
-}
-
-
-void OptionsMenu(vector<string> command) {
-
-	if (command.size() < 3) {
-		cout << "invalid: expected parameters for 'set' command";
-		return;
-	}
-
-	auto optionname = command.at(1);
-	auto optionval  = command.at(2);
-
-	//here we set the options
-	if (optionname == "placeholder") {
-		if (optionval == "placeholder") {
-			
+			cout << command.name << " " << command.parameter_description << ": " << descToPrint;
 		}
-		else goto unknownValue;
-	}
-	else {
-		cout << "unknown option. type 'options' for a list of all options";
-		return;
+
 	}
 
-	return;        //if we dont return it prints the bad value message
+	cout << "\n\n\n";
 
-	unknownValue:	//reached when we have an invalid value request for a KNOWN option
-	cout << "invalid value '" << optionval << "' for option '" << optionname << "'";
+	return crt_none;
+}
+cmd_function(cmd_quit) {
+	exit(EXIT_SUCCESS);
 }
 
+cmd_function(cmd_cc) {
 
+	std::cout << cpu->cyclecounter << "\n";
 
-command_return_t cmd_help(CPU_T* cpu, vector<string> params) {
-	cout << "\n\n"
-		 << "pressing enter will repeat the last step-like instruction" << "\n"
- 		 << "press esc while running to start debugging" << "\n\n"
-
- 		 << "commands:" << "\n";
-
-	foreach (command, commands) {
-		cout << command.description_short;
-	}
+	if (params.size() == 2 && params.at(1) == "reset")
+		cpu->cyclecounter = 0;
 
 	return crt_none;
 }
 
-//all available commands
-debugger_command_t commands[] = {
-	{"help", NULL, cmd_help, "list all commands, or describe a specific one", NULL, "help [command]"},
-};
+cmd_function(cmd_step) {
+
+	lastcommand = "s";
+	return crt_return;
+}
+cmd_function(cmd_next) {
+
+	lastcommand = "n";
+
+	doBreakDepth = true;
+	breakAtDepth = callDepth;	//we want to break at the next instruction, so same level. this way we can also skip funcs
+
+	return crt_continue_execution;
+}
+cmd_function(cmd_finish) {
+
+	lastcommand = "f";
+
+	doBreakDepth = true;
+	breakAtDepth = callDepth - 1;	//we want to break when we get out of the function, so one level higher
+	
+	return crt_continue_execution;
+}
+
+cmd_function(cmd_memview) {
+
+	if (params.size() < 2) {
+		cout << "invalid parameter number for 'm'";
+		return crt_none;
+	}
+
+	int destination = -1;	//0 is normal ram, 1 is vram, 2 is cram
+
+	string address;
+
+	if (params.size() == 2) {	//no specified destination, so second element is address
+		destination = 0;
+		address = params.at(1);
+	} else if (params.size() == 3) {	//address is third element bc destination is second
+		if (params.at(1) == "v") destination = 1;	//vram
+		if (params.at(1) == "c") destination = 2;	//cram
+		address = params.at(2);
+	}
+	
+	auto pos = address.find('-');		//find the first '-' symbol
+	
+	if (pos == string::npos) {		// if there is no '-' in the command it's a single address
+		int addr = GetAddrFromStr(address);
+
+		if (addr == -1) {	// an error occured in the function
+			cout << "address out of range (min: " << ADDRESS_MIN << ", max: " << ADDRESS_MAX << ")";
+			return crt_none;
+		}
+
+		byte result;
+		switch(destination) {
+			case 0:
+				result = cpu->ReadMemory(addr);
+				break;
+			case 1:
+				result = cpu->ReadVRAM(addr);
+				break;
+			case 2:
+				result = cpu->ReadCRAM(addr);
+				break;
+			default:
+				throw;
+		}
+		cout << ByteToHex(result);
+	} else {	//we have a '-' which means two addresses
+		int addr1, addr2;
+		string addr1str, addr2str;
+		addr1str = address.substr(0, (address.length() - pos - 1));		//keep only the first  value
+		addr2str = address.substr(pos + 1);	//keep only the second value
+
+		//get address
+		addr1 = GetAddrFromStr(addr1str);
+		addr2 = GetAddrFromStr(addr2str);
+		if (addr1 == -1) {
+			cout << "first address out of range (min: " << ADDRESS_MIN << ", max: " << ADDRESS_MAX << ")";
+			return crt_none;
+		}
+		if (addr2 == -1) {
+			cout << "second address out of range (min: " << ADDRESS_MIN << ", max: " << ADDRESS_MAX << ")";
+			return crt_none;
+		}
+
+		//output all values
+		//this way we can write forward and backwards. useful bc the stack grows downwards
+		byte current;
+		if (addr1 <= addr2) {
+			for (int addr = addr1; addr <= addr2; addr++) {
+				switch(destination) {	//haha yes O P T I M I S A T I O N
+					case 0:
+						current = cpu->ReadMemory(addr);
+						break;
+					case 1:
+						current = cpu->ReadVRAM(addr);
+						break;
+					case 2:
+						current = cpu->ReadCRAM(addr);
+						break;
+					default:
+						throw;
+				}
+				cout << ByteToHex(current) << ' ';
+			}
+		} else {
+			for (int addr = addr1; addr >= addr2; addr--) {
+				switch(destination) {
+					case 0:
+						current = cpu->ReadMemory(addr);
+						break;
+					case 1:
+						current = cpu->ReadVRAM(addr);
+						break;
+					case 2:
+						current = cpu->ReadCRAM(addr);
+						break;
+					default:
+						throw;
+				}
+				cout << ByteToHex(current) << ' ';
+			}
+		}
+	}
+
+	return crt_none;
+}
+cmd_function(cmd_memwrite) {
+
+	int destination = -69;
+	string addrstr;
+	string  valstr;
+	if (params.size() == 3) {
+
+		destination = 0;
+		addrstr = params.at(1);
+		valstr  = params.at(2);
+
+	} else if (params.size() == 4) {
+
+		addrstr = params.at(2);
+		valstr  = params.at(3);
+		if (params.at(1) == "v") destination = 1;	//vram
+		if (params.at(1) == "c") destination = 2;	//cram
+
+	} else {
+		throw;
+	}
+
+	//here we calculate the address the user asked
+	int addr = GetAddrFromStr(addrstr);
+
+	//here we find the value they want to write
+	auto val = GetByteFromStr(valstr);
+
+	//if we reached here we're good to go
+	WriteMemory_ignorebuffer(cpu, addr, val, destination);
+	
+	UpdateDebugInfo(cpu);
+
+	return crt_none;
+}
+
+cmd_function(cmd_reg_write) {
+
+	auto name = params.at(1);				//get name of register
+
+	//oversimplified toupper function
+	for(int i = 0; i < name.length(); i++) {
+		if (name[i] >= 97) name[i] -= 32;
+	}
+
+	if (name == "HL") {
+		//it's the only 16bit register
+		int val = GetAddrFromStr(params.at(2));
+		if (val == -1) {
+			cout << "invalid: expected a number";
+			return crt_none;
+		}
+
+		//assign to HL
+		cpu->HL = val;
+	}
+	else {
+
+		//this is for 8bit registers
+		int val = GetByteFromStr(params.at(2));
+
+		//assign the value to the register
+			 if (name == "A") cpu->A = val;
+		else if (name == "B") cpu->B = val;
+		else if (name == "C") cpu->C = val;
+		else if (name == "D") cpu->D = val;
+		else if (name == "F") cpu->F = val;
+		else if (name == "SP") cpu->SP = val;
+		else if (name == "H") {
+			//only set the high byte of HL
+			cpu->HL &= 0x00FF;
+			cpu->HL |= val << 8;
+		}
+		else if (name == "L") {
+			//only set the low byte of HL
+			cpu->HL &= 0xFF00;
+			cpu->HL |= val;
+		}
+		else {
+			//if this happens we don't want to update bc it clears the screen
+			cout << "invalid register '" << name << "'";
+			return crt_none;
+		}
+	}
+
+	//if no errors, update info
+	UpdateDebugInfo(cpu);
+
+	return crt_none;
+}
+cmd_function(cmd_jump) {
+
+	int addr = GetAddrFromStr(params.at(1));
+	if (addr == -1) {
+		cout << "invalid address";
+		return crt_none;
+	}
+
+	cpu->PC = addr;
+	dodebug = true;
+	UpdateDebugInfo(cpu);
+
+	return crt_none;
+}
+
+cmd_function(cmd_breakpoint) {
+
+	breakpointMode mode = execute;
+
+	string modetoken;		//the token containing the mode (if any)
+	string addrtoken;		//the token containing the address
+	//this way the order does not matter
+	if (params.at(1).at(0) == '-') {			//we have a mode option as the first parameter
+		modetoken = params.at(1);
+		addrtoken = params.at(2);
+	}
+	else if (params.size() > 2) {
+		if (params.at(2).at(0) == '-') {		//we have a mode option as the second parameter
+			modetoken = params.at(2);
+			addrtoken = params.at(1);
+		}
+	} else {
+		modetoken = "-e";			//use the default
+		addrtoken = params.at(1);
+	}
+
+	switch (modetoken.at(1)) {
+		case 'e':		//execute. it's the default anyways
+			break;
+		case 'w':
+			mode = write;
+			break;
+		case 'r':
+			mode = read;
+			break;
+		default:
+			cout << "invalid option for break point mode. type 'help break' for a list\n";
+			return crt_none;
+	}
+
+	int addr = GetAddrFromStr(addrtoken);
+	if (addr == -1) {
+		cout << "address out of range (min: " << ADDRESS_MIN << ", max: " << ADDRESS_MAX << ")";
+		return crt_none;
+	}
+
+	//first we check if it exists already
+	//we compare both address and mode bc we can add multiple breakpoints at the same address but w different modes
+	list<BreakPoint>* ls = nullptr;
+	//TODO: add the breakpoint checking the destination
+	
+	foreach(bp, breakpoints) {
+		if (bp.address == addr && bp.mode == mode) {
+			cout << "there already is a breakpoint at 0x" << WordToHex(addr) << " with mode " << BPModeToString(mode);
+			return crt_none;
+		}
+	}
+
+	//set properties
+	BreakPoint bp;
+	bp.mode = mode;
+	bp.address = addr;
+
+	breakpoints.push_back(bp);	//add to the list
+
+	//write a confirmation message
+	cout << "added breakpoint at 0x" << WordToHex(addr) << " in " << BPModeToString(mode) << " mode";
+
+	return crt_none;
+}
+cmd_function(cmd_breakpoint_delete) {
+
+	//TODO
+}
+cmd_function(cmd_breakpoint_list) {
+
+	//TODO
+}
