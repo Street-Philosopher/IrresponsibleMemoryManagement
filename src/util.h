@@ -5,7 +5,7 @@
 //makes it easier to iterate over all elements in a list/array
 #define foreach(x, y) for(auto x: y)
 
-#define WINDOW_TITLE (std::string)"A64 Emulator"
+#define WINDOW_TITLE (std::string)"IMM-8 Emulator"
 
 void cls();
 
