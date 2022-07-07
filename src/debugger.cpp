@@ -1,10 +1,11 @@
 #include "debugger.h"
 #include "util.h"
 
+//it's called "Irresponsible Memory Management" for a reason
 #define _SILENCE_EXPERIMENTAL_FILESYSTEM_DEPRECATION_WARNING
 #define _CRT_SECURE_NO_WARNINGS
 
-#include <filesystem>		//to check/create directories
+#include <experimental/filesystem>		//to check/create directories
 #include <sstream>
 #include <list>
 
@@ -31,15 +32,14 @@ void PrintDebug(string msg) {
 }
 
 
-// struct debugger_command_t;
 //possible return values of the command
 enum command_return_t { crt_none, crt_return, crt_continue_execution };
 typedef command_return_t (*command_function_t)(CPU_T* cpu, vector<string> params);
 
-#define cmd_function(name) command_return_t name(CPU_T* cpu, vector<string> params)
+#define debugger_func(name) command_return_t name(CPU_T* cpu, vector<string> params)
 #define cmd_alias(name) {name, (debugger_command_t*)1, NULL, "", "", "" }
 
-typedef struct debugger_command_t {
+struct debugger_command_t {
 
 	//command to write
 	string name;
@@ -58,26 +58,34 @@ typedef struct debugger_command_t {
 		return name == sc.name;
 	}
 
-} command_t;
-debugger_command_t null_command = { "", NULL, "", "", "" };
+};
 
 //command functions declaration
-cmd_function(cmd_help);
-cmd_function(cmd_quit);
-cmd_function(cmd_cc);
-cmd_function(cmd_step);
-cmd_function(cmd_next);
-cmd_function(cmd_finish);
-cmd_function(cmd_memview);
-cmd_function(cmd_memwrite);
-cmd_function(cmd_reg_write);
-cmd_function(cmd_jump);
-cmd_function(cmd_breakpoint);
-cmd_function(cmd_breakpoint_delete);
-cmd_function(cmd_breakpoint_list);
+debugger_func(cmd_help);
+debugger_func(cmd_quit);
+debugger_func(cmd_cc);
+debugger_func(cmd_step);
+debugger_func(cmd_next);
+debugger_func(cmd_finish);
+debugger_func(cmd_memview);
+debugger_func(cmd_memwrite);
+debugger_func(cmd_reg_write);
+debugger_func(cmd_jump);
+debugger_func(cmd_breakpoint);
+debugger_func(cmd_breakpoint_delete);
+debugger_func(cmd_breakpoint_list);
+debugger_func(cmd_disassembly);
+debugger_func(cmd_loadstate);
+debugger_func(cmd_savestate);
+debugger_func(cmd_reset);
+debugger_func(cmd_load);
+debugger_func(cmd_update);
+debugger_func(cmd_cls);
+debugger_func(cmd_run);
 
 //all commands
 debugger_command_t commands[] = {
+
 	{"help", cmd_help, "list all commands, or describe a specific one", "", "[command]"},
 	{"quit", cmd_quit, "exit the emulator", "", "/ exit"},
 	// cmd_alias("exit"),
@@ -91,17 +99,30 @@ debugger_command_t commands[] = {
 	{"finish", cmd_finish, "run until the end of the function", "", "/ f"},
 	// cmd_alias("f")
 
-	{"m", cmd_memview, "print the memory value at ADDR", "print the value of the memory at the given ADDRess. specifying 'v' or 'c' as parameters will select which memory to look at (VRAM or CRAM)", "[v/c] ADDR"},
-	{"m", cmd_memview, "print the memory values from ADDR1 to ADDR2", "print all the values in the given memory interval. specifying 'v' or 'c' as parameters will select which memory to look at (VRAM or CRAM)", "[v/c] ADDR"},
+	{"m", cmd_memview, "print the memory value at ADDR", "print the value of the memory at the given ADDRess. specifying 'r', 'v' or 'c' as parameters will select which memory to look at (RAM, VRAM or CRAM)", "[r/v/c] ADDR"},
+	{"m", cmd_memview, "print the memory values from ADDR1 to ADDR2", "print all the values in the given memory interval. specifying 'r', 'v' or 'c' as parameters will select which memory to look at (RAM, VRAM or CRAM)", "[r/v/c] ADDR"},
 
-	{"w", cmd_memwrite, "write VAL to ADDR", "write the given VALue to the specified ADDRess. you can specify 'v' or 'c' to write to VRAM or Cram", "[v/c] ADDR VAL"},
+	{"dis", cmd_disassembly, "disassembles the byte at the given ADDRess" },
+
+	{"w", cmd_memwrite, "write VAL to ADDR", "write the given VALue to the specified ADDRess. you can specify 'r', 'v' or 'c' to write to RAM, VRAM or Cram", "[r/v/c] ADDR VAL"},
 
 	{"reg", cmd_reg_write, "load VAL in the given register", "load the given VALue in any of the REGisters. the registers are:\ngeneral purpose, 8bit:\n\tA, B, C, D, H, L\ngeneral purpose, 16bit:\n\tHL\nSP (stack pointer, 8bit)\nF  (flags, 8bit)", "NAME VAL"},
 	{"jp", cmd_jump, "set the Program Counter to the given ADDRess", "", "ADDR"},
 
-	{"break" , cmd_breakpoint, "add a breakpoint at the given ADDRess", "add a breakpoint at the given ADDRess.\nyou can specify a breakpoint mode:\n\t-e: the default mode, will trigger on execution\n\t-w: will trigger on write\n\t-r: will trigger on read\n\nyou can also specify 'v' or 'c' to add the breakpoint in VRAM or CRAM", "[v/c] [mode] ADDR"},
-	{"remove", cmd_breakpoint_delete, "remove the breakpoint at the specified ADDRess", "remove all breakpoints at the specified ADDRess, or specify a mode to remove only those.\nyou can specify 'v' if the breakpoint is in VRAM or 'c' if it's in CRAM.\nwriting 'all' in place of the address will remove all breakpoints, at all addresses", "[v/c] [mode] ADDR"},
-	{"list",   cmd_breakpoint_list, "list all existing breakpoints", "", ""},
+	{"break" , cmd_breakpoint, "add a breakpoint at the given ADDRess", "add a breakpoint at the given ADDRess.\nyou can specify a breakpoint mode:\n\t-e: the default mode, will trigger on execution\n\t-w: will trigger on write\n\t-r: will trigger on read\n\nyou can also specify 'r', 'v' or 'c' to add the breakpoint in RAM, VRAM or CRAM", "[r/v/c] [mode] ADDR"},
+	{"remove", cmd_breakpoint_delete, "remove the breakpoint at the specified ADDRess", "remove all breakpoints at the specified ADDRess, or specify a mode to remove only those.\nyou can specify 'r' if it's in RAM (default), 'v' if the breakpoint is in VRAM or 'c' if it's in CRAM.\nwriting 'all' in place of the address will remove all breakpoints, at all addresses", "[r/v/c] [mode] ADDR"},
+	{"list",   cmd_breakpoint_list, "list all existing breakpoints", "shows a list of all existing breakpoints", ""},
+
+	{"ss", cmd_savestate, "save a state", "save the state with the given NUMber. they are numbered with the digits from 0 to 9", "NUM"},
+	{"ss", cmd_loadstate, "load a state", "load the state with the given NUMber. they are numbered with the digits from 0 to 9", "NUM"},
+	{"reset", cmd_reset, "reset the CPU", "reset the CPU. this will return it to the initial state of the last time you've loaded a ROM, or if you haven't to when you first opened the emulator", ""},
+
+	{"load", cmd_load, "load a binary file to RAM"},
+
+	{"cls", cmd_cls, "clear the console", "", ""},
+	{"update", cmd_update, "force a screen update", "manually update the display. this will not influence the normal screen update cycle", ""},
+
+	{"run", cmd_run, "exit the debugger and run until the next breakpoint", "", ""},
 };
 debugger_command_t GetDebuggerCommand(string name) {
 
@@ -116,7 +137,7 @@ debugger_command_t GetDebuggerCommand(string name) {
 		}
 	}
 
-	return null_command;
+	return {""};//null command. we'll check if the name is not zero
 }
 
 
@@ -142,10 +163,10 @@ void Debugger::DecCallDepth() { callDepth--; }
 
 
 //breakpoints
-typedef struct BreakPoint_T {
+struct BreakPoint {
 	word address;
 	breakpointMode mode;
-} BreakPoint;
+};
 
 list<BreakPoint> breakpoints;
 list<BreakPoint> breakpoints_cram;
@@ -181,7 +202,7 @@ void Debugger::DebugInit(CPU_T* CPU) {
 	// }
 
 	//if the folder doesn't exist, create it
-	namespace fs = std::filesystem;
+	namespace fs = std::experimental::filesystem;
 	if (!fs::is_directory("saveStates") || !fs::exists("saveStates")) {
 		fs::create_directory("saveStates");
 	}
@@ -262,7 +283,7 @@ void WriteMemory_ignorebuffer(CPU_T* CPU, word address, byte value, int destinat
 }
 
 
-//the 'codeToMnemonic' function has a '&' symbol where a 16-bit value is needed, and a '%' where an 8-bit one is.
+//the 'CodeToMnemonic' function has a '&' symbol where a 16-bit value is needed, and a '%' where an 8-bit one is.
 //this functions substitutes them for the correct values
 string AddImmediatesToDisassembly(string original, CPU_T* _cpu) {
 
@@ -316,7 +337,7 @@ void UpdateDebugInfo(CPU_T* _cpu) {
 
 	auto opcode = _cpu->ReadMemory(pc);
 
-	auto instDisassembly = codeToMnemonic(opcode);
+	auto instDisassembly = CodeToMnemonic(opcode);
 	instDisassembly = AddImmediatesToDisassembly(instDisassembly, _cpu);
 
 	cout << "PC =	" << WordToHex(pc) << " => " << ByteToHex(opcode) << " " << ByteToHex(_cpu->ReadMemory(pc + 1)) << " " << ByteToHex(_cpu->ReadMemory(pc + 2)) << " ... (" << instDisassembly << ")" << "\n";
@@ -862,7 +883,6 @@ int SaveState(CPU_T* _cpu, int num) {
 // 				//first we check if it exists already
 // 				//we compare both address and mode bc we can add multiple breakpoints at the same address but w different modes
 // 				list<BreakPoint>* ls = nullptr;
-// 				//TODO: add the breakpoint checking the destination
 				
 // 				foreach(bp, breakpoints) {
 // 					if (bp.address == addr && bp.mode == mode) {
@@ -894,7 +914,7 @@ int SaveState(CPU_T* _cpu, int num) {
 // 				goto end;
 // 			}
 
-// 			string disassembly = codeToMnemonic(_cpu->ReadMemory(addr));
+// 			string disassembly = CodeToMnemonic(_cpu->ReadMemory(addr));
 
 // 			//we can't use the regular "addImmediateToDisassembly" so here's a modified one
 // 			{
@@ -1044,7 +1064,7 @@ int SaveState(CPU_T* _cpu, int num) {
 // 			cout << "unknown command. write 'help' for a list of commands";
 // 		}
 
-cmd_function(cmd_help) {
+debugger_func(cmd_help) {
 
 	//general help
 	if (params.size() == 1) {
@@ -1065,7 +1085,7 @@ cmd_function(cmd_help) {
 	} else {
 
 		auto command = GetDebuggerCommand(params.at(1));
-		if (command == null_command) {
+		if (command.name == "") {
 
 			cout << "unknown command \"" << params.at(1) << "\". type \"help\" for a list of commands";
 
@@ -1088,11 +1108,11 @@ cmd_function(cmd_help) {
 
 	return crt_none;
 }
-cmd_function(cmd_quit) {
+debugger_func(cmd_quit) {
 	exit(EXIT_SUCCESS);
 }
 
-cmd_function(cmd_cc) {
+debugger_func(cmd_cc) {
 
 	std::cout << cpu->cyclecounter << "\n";
 
@@ -1102,12 +1122,12 @@ cmd_function(cmd_cc) {
 	return crt_none;
 }
 
-cmd_function(cmd_step) {
+debugger_func(cmd_step) {
 
 	lastcommand = "s";
 	return crt_return;
 }
-cmd_function(cmd_next) {
+debugger_func(cmd_next) {
 
 	lastcommand = "n";
 
@@ -1116,7 +1136,7 @@ cmd_function(cmd_next) {
 
 	return crt_continue_execution;
 }
-cmd_function(cmd_finish) {
+debugger_func(cmd_finish) {
 
 	lastcommand = "f";
 
@@ -1126,7 +1146,7 @@ cmd_function(cmd_finish) {
 	return crt_continue_execution;
 }
 
-cmd_function(cmd_memview) {
+debugger_func(cmd_memview) {
 
 	if (params.size() < 2) {
 		cout << "invalid parameter number for 'm'";
@@ -1231,7 +1251,7 @@ cmd_function(cmd_memview) {
 
 	return crt_none;
 }
-cmd_function(cmd_memwrite) {
+debugger_func(cmd_memwrite) {
 
 	int destination = -69;
 	string addrstr;
@@ -1267,7 +1287,7 @@ cmd_function(cmd_memwrite) {
 	return crt_none;
 }
 
-cmd_function(cmd_reg_write) {
+debugger_func(cmd_reg_write) {
 
 	auto name = params.at(1);				//get name of register
 
@@ -1321,7 +1341,7 @@ cmd_function(cmd_reg_write) {
 
 	return crt_none;
 }
-cmd_function(cmd_jump) {
+debugger_func(cmd_jump) {
 
 	int addr = GetAddrFromStr(params.at(1));
 	if (addr == -1) {
@@ -1336,7 +1356,7 @@ cmd_function(cmd_jump) {
 	return crt_none;
 }
 
-cmd_function(cmd_breakpoint) {
+debugger_func(cmd_breakpoint) {
 
 	breakpointMode mode = execute;
 
@@ -1401,11 +1421,280 @@ cmd_function(cmd_breakpoint) {
 
 	return crt_none;
 }
-cmd_function(cmd_breakpoint_delete) {
+debugger_func(cmd_breakpoint_delete) {
 
-	//TODO
-}
-cmd_function(cmd_breakpoint_list) {
+	//what we'll loop over
+	list<BreakPoint> bps;
+	breakpointMode mode = execute;
+	int address;
 
-	//TODO
+	string areatoken = "";		//which memory to target, if any
+	string modetoken = "";		//the token containing the mode (if any)
+	string addrtoken = "";		//the token containing the address
+
+	switch (params.size() - 1) {
+
+		//no parameters is all of them
+		case 0:
+			breakpoints.clear();
+			breakpoints_vram.clear();
+			breakpoints_cram.clear();
+			cout << "cleared all breakpoints";
+			return crt_none;
+		//do this way so we fall through
+		default:
+		case 3:
+			areatoken = params.at(3);
+		case 2:
+			modetoken = params.at(2);
+		case 1:
+			addrtoken = params.at(1);
+			break;
+	}
+
+	switch (areatoken.at(0)) {
+		case 'r':
+			bps = breakpoints;
+			break;
+		case 'v':
+			bps = breakpoints_vram;
+			break;
+		case 'c':
+			bps = breakpoints_cram;
+			break;
+		default:
+			//there is no specification so all of them
+			bps.insert(bps.end(), breakpoints.begin(), breakpoints.end());
+			bps.insert(bps.end(), breakpoints_vram.begin(), breakpoints_vram.end());
+			bps.insert(bps.end(), breakpoints_cram.begin(), breakpoints_cram.end());
+			break;
+	}
+
+	//means all of them, we'll say that -1 means all
+	if (modetoken == "") mode = (breakpointMode)(-1);
+	else {
+		switch (modetoken.at(1)) {
+			case 'e':
+				mode = execute;
+				break;
+			case 'w':
+				mode = write;
+				break;
+			case 'r':
+				mode = read;
+				break;
+			default:
+				cout << "invalid breakpoint mode: \"" << modetoken << "\"";
+				break;
+		}
+	}
+
+	address = GetAddrFromStr(addrtoken);
+
+	//how many breakpoints we've removed
+	int removedCount = 0;
+	list<BreakPoint>::iterator i = breakpoints.begin();
+				
+	foreach(bp, bps) {
+		//we only check for the address bc we delete based on address only
+		//we found our element
+		if (bp.address == address) {
+			if ((mode == (breakpointMode)(-1)) || (mode == bp.mode)) {
+				removedCount++;
+				breakpoints.erase(i);	//remove element
+			}
+		}
+
+		advance(i, 1);		//increment i by one
+	}
+
+	if (removedCount == 0) {
+		cout << "no breakpoint was found";
+	} else {
+		cout << removedCount << " breakpoints removed";
+	}
+
+	return crt_none;
 }
+debugger_func(cmd_breakpoint_list) {
+
+	//i don't need to do it this way but regular compares are boring, this makes me feel like i know what i'm doing
+	if (!(breakpoints.size() || breakpoints_vram.size() || breakpoints_cram.size())) {
+		cout << "the list of breakpoints is empty";
+	}
+
+	//all the ones in normal RAM
+	if (breakpoints.size() > 0) {
+		cout << "RAM:\n";
+		foreach (breakpoint, breakpoints) {
+			cout << "\t" << WordToHex(breakpoint.address) << " (" << BPModeToString(breakpoint.mode) << ")\n";
+		}
+	}
+
+	cout << "\n";
+
+	//all the ones in VRAM
+	if (breakpoints_vram.size() > 0) {
+		cout << "VRAM:\n";
+		foreach (breakpoint, breakpoints_vram) {
+			cout << "\t" << WordToHex(breakpoint.address) << " (" << BPModeToString(breakpoint.mode) << ")\n";
+		}
+	}
+
+	cout << "\n";
+
+	//all the ones in CRAM
+	if (breakpoints_cram.size() > 0) {
+		cout << "CRAM:\n";
+		foreach (breakpoint, breakpoints_cram) {
+			cout << "\t" << WordToHex(breakpoint.address) << " (" << BPModeToString(breakpoint.mode) << ")\n";
+		}
+	}
+
+	return crt_none;
+}
+
+debugger_func(cmd_disassembly) {
+
+	int addr;
+
+	addr = GetAddrFromStr(params.at(1));
+	if (addr == -1) {
+		std::cout << "addr out of range\n";
+		return crt_none;
+	}
+
+	string disassembly = CodeToMnemonic(cpu->ReadMemory(addr));
+
+	//TODO: fix this because it's bad
+	//we can't use the regular "addImmediateToDisassembly" so here's a modified one
+	{
+		int pos = disassembly.find('&');
+		while (pos != string::npos) {			//repeat until there are no '&' left
+	
+			//split the string in two so that the '&' is left out
+			string part1 = disassembly.substr(0, pos);
+			string part2 = disassembly.substr(pos + 1);
+
+			//it's a 16bit value so read next two bytes
+			byte b1 = cpu->ReadMemory(addr + 1),		// low
+					b2 = cpu->ReadMemory(addr + 2);		// high
+			//the computer is little endian so we have to do b2 before b1
+			string addressStr = "0x" + ByteToHex(b2) + ByteToHex(b1);
+
+			//now the string has the address where it should be
+			disassembly = part1 + addressStr + part2;
+
+			pos = disassembly.find('&');
+		}
+		//then check for 8-bit
+		pos = disassembly.find('%');
+		while (pos != string::npos) {			//repeat until there are no '%' left
+	
+			//split the string in two so that the '%' is left out
+			string part1 = disassembly.substr(0, pos);
+			string part2 = disassembly.substr(pos + 1);
+
+			//it's an 8bit value so read next byte
+			byte b1 = cpu->ReadMemory(addr + 1);
+	
+			string addressStr = "0x" + ByteToHex(b1);
+
+			//now the string has the address where it should be
+			disassembly = part1 + addressStr + part2;
+
+			pos = disassembly.find('%');
+		}
+	}
+
+	std::cout << ByteToHex(cpu->ReadMemory(addr)) << " => " << disassembly << "\n";
+
+	return crt_none;
+}
+
+debugger_func(cmd_savestate) {
+
+	int num;
+	try
+	{
+		num = stoi(params.at(1));
+		if (num > 9 || num < 0) throw;
+	}
+	catch(...) {
+		cout << "invalid number for state. expected a 0-9 value";
+		return crt_none;
+	}
+
+	if (SaveState(cpu, num) == 0) {
+		cout << "saved state!";
+	} else {
+		cout << "could not save state";
+	}
+
+	return crt_none;
+}
+debugger_func(cmd_loadstate) {
+	
+	int num;
+	//it's in a try because stoi can cause exceptions if the value received is bad
+	try
+	{
+		num = stoi(params.at(1));
+		if (num > 9 || num < 0) throw exception();
+	}
+	catch(exception) {
+		cout << "invalid number for state. expected a 0-9 value";
+		return crt_none;
+	}
+
+	if (LoadState(cpu, num) == 0) {
+		dodebug = true;
+		UpdateDebugInfo(cpu);
+		cout << "succesfully loaded state!";
+	} else {
+		cout << "could not load state";
+	}
+
+	return crt_none;
+}
+debugger_func(cmd_reset) {
+
+	//reset is just a fancy load state
+	LoadState(cpu, -1);		//the state -1 contains the machine at the beginning
+	dodebug = true;
+	UpdateDebugInfo(cpu);		//returning would also step once
+
+	cout << "correctly reset the CPU!";
+
+	return crt_none;
+}
+
+debugger_func(cmd_load) {
+
+	if (LoadProgramToMemory(params.at(1), cpu->base) == true) {
+		cpu->reset();
+		SaveState(cpu, -1);	//for the reset command
+		UpdateDebugInfo(cpu);
+		cout << "success!";
+	} else {
+		LoadFileErrorMsg();
+	}
+
+	return crt_none;
+}
+
+debugger_func(cmd_update) {
+
+	updatescreen(cpu);
+	std::cout << "updated screen!\n";
+	return crt_none;
+}
+debugger_func(cmd_cls) {
+
+	UpdateDebugInfo(cpu);
+
+	return crt_none;
+}
+
+//it's all managed in the return thing
+debugger_func(cmd_run) { return crt_continue_execution; }

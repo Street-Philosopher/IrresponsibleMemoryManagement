@@ -467,7 +467,7 @@ int InstructionLength(byte opcode) {
 }
 
 //ADD_OPCODE:
-string codeToMnemonic(byte opcode) {
+string CodeToMnemonic(byte opcode) {
 	
 	string reg1(1, (char)('A' + (opcode % 4)));
 	//only used by "ld reg,reg" but ok
