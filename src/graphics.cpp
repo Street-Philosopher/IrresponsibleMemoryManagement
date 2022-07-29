@@ -1,6 +1,6 @@
 #include <SFML/Graphics.hpp>
 #include <SFML/Window.hpp>
-
+//TODO: maybe find an alternative to SFML
 #include "util.h"
 #include "types.h"
 #include "cramConstants.h"
