@@ -1,9 +1,12 @@
 #from er import er as er
 
-#this way we can have the warning function from main to here without circimp
+#TODO:
+#   change checking functions very similar to each other to be a single one
+#   change org so it doesnt pad bytes, and create a function to replace the current org
+
 from typing import Callable
 
-
+#this way we can have the warning function from main to here without circimp
 funcs = []
 
 labels = {}
