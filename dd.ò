@@ -36,7 +36,7 @@ display:
 0x0000-0x2000: screen data (one bit per pixel, with gb-like "squares")
 0xFF00-0xFFFF: screen settings
 updated every 65536 clock cycles
-# everything else is basically free
+# TODO: turn the display to sprite-based, maybe colours but idk
 
 
 cram:
