@@ -1,0 +1,1 @@
+clang++ -I src/SFML-2.5.1/include src/*.cpp
