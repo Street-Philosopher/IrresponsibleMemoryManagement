@@ -2,6 +2,8 @@ from sys import argv as args
 from colorama import Fore
 from codecheckers import INVALID_LABEL_NAMES, checkertable, InstrError, ParamError, IsLabelNameValid
 from codecheckers import init as ccinit
+from pathlib import Path
+import os
 
 
 """
@@ -9,20 +11,60 @@ This contains the main "body" of the assembler
 The actual syntax of the instructions is in "codecheckers.py"
 """
 
+def abort_assembly(msg):
+	print("error:", msg)
+	print("burp")
+	print(Fore.RED, "assembly aborted", Fore.WHITE)
+	exit(-1)
+def errormsg(msg, showline = True):
+	global linecounter, valid
+	print(Fore.RED + "error" + (f" on line {str(linecounter)}" if showline is True else "") + Fore.WHITE + ":", msg, "\n")
+	valid = False
+def warning (msg):
+	global linecounter
+	print(Fore.YELLOW + "warning on line " + str(linecounter) + Fore.WHITE + ":", msg, "\n")
+ccinit(warning) #per usare i warning anche nell'altro file
+del(ccinit)
+
+if len(args) == 2:
+	if args[1] == "-h":
+		print;
+		exit(0)
+
+CURRENT_ADDRESS = 0
 
 PATH = input("path to the file: ") if len(args) <= 1 else args[1]
+OUT_FILENAME = -1
+KEEP_TEMP_FILES = False
+OUT_MODE = "bin"
+NOPAUSE = False
+QUIET = False
+#TODO: make this not bad
+for i in range(2, len(args)):
+	if args[i] == "-o":
+		try:
+			OUT_FILENAME = args[i + 1]
+		except:
+			abort_assembly("no filename passed with the '-o' command")
+	if args[i] == "-kt":
+		KEEP_TEMP_FILES = True
+	if args[i] == "-c":
+		OUT_MDOE = "c-array"
+	if args[i] == "-np":
+		NOPAUSE = True
+	if args[i] == "-q":
+		QUIET = True
+	if args[i] == "-org":
+		CURRENT_ADDRESS = int(args[i+1], 0)
+	#TODO: un coso pepr fare uscire i simboli di debug per essere portati nello script principale, un coso per definire costanti DALLO script principale a quelli secondari
+if OUT_FILENAME == -1:
+	OUT_FILENAME = Path(PATH).stem + (".bin" if OUT_MODE == "bin" else ".txt")
+#TODO: maybe
+# if os.path.isfile(OUT_FILENAME):
+# 	abort_assembly("output file already exists")
 
 #TODO: eval, include
 
-
-def errormsg(msg, showline = True):
-	global linecounter
-	print(Fore.RED + "error" + f" on line {str(linecounter)}: " if showline is True else "", msg, "\n\n" + Fore.WHITE)
-def warning (msg):
-	global linecounter
-	print(Fore.YELLOW + "warning on line " + str(linecounter) + ": ", msg, "\n\n" + Fore.WHITE)
-ccinit(warning) #per usare i warning anche nell'altro file
-del(ccinit)
 
 #ignores the split if the symbol is between quotes
 def CustomSplit(string, char):
@@ -67,7 +109,7 @@ def Preprocessing():	#todo: do comment and other stuff in here
 		while linecounter < len(lines):
 			#all operations are done on this "line" variable and then reinserted in the array
 			linecounter += 1
-			line = lines[linecounter - 1].lower()
+			line: str = lines[linecounter - 1].lower()
 			
 			if line[-1] == "\n": line = line[:-1]	#remove endline
 
@@ -85,26 +127,17 @@ def Preprocessing():	#todo: do comment and other stuff in here
 			if line[0] == "#":
 				if line[1:4] == "def":
 					#create a macro
-					key = line[5:(line.index("as") - 1)]
-					value = line[(line.index("as") + 3):]
+					key = line[5:(line.index("as") - 1)].strip()
+					value = line[(line.index("as") + 3):].strip()
 					macros[key] = value
 
 					lines[linecounter - 1] = ""
 					continue
+				elif line[1:8] == "include":
+					line = line[1:]
 				else:
 					errormsg("unknown macro \"" + line[1:] + "\"")
 					exit()
-				"""
-				elif line[1:8] == "include":
-					path = line[10:-1]
-					c = 0
-					#lines.pop(linecounter - 1)			#this line replaces the linecounter
-					with open(path) as INCLUDEFILE:
-						for include_line in INCLUDEFILE:
-							lines.insert((linecounter + c), include_line)
-							c += 1
-					lines[linecounter - 1] = ""
-					continue"""
 			else:
 				#replace in the line
 				for macro in macros:
@@ -119,19 +152,15 @@ def Preprocessing():	#todo: do comment and other stuff in here
 	except:
 		import traceback
 		tb_str = traceback.format_exc()
-		print("an error occured:\n", tb_str)
+		errormsg("\n" + tb_str)
 
-def Assemble(PATH, caller=""):
-	global allbytes
-
-
-
-#stuff like define, removing comments, etc
-Preprocessing()
 
 valid = True #is the file valid?
 global linecounter
 linecounter = 0
+
+#stuff like define, removing comments, etc
+Preprocessing()
 
 #key is name of label, value is address it represents
 labels = { }
@@ -163,14 +192,12 @@ try:
 			if line[-1] == ":":
 					#something		#check that all characters are valid
 				if line != instr or IsLabelNameValid(line[:-1]) is not True:
-					valid = False
 					errormsg("invalid syntax for label definition")
 					continue
 				#take out this so we can check
 				line = line[:-1]
 				#check if the label would replace stuff which is bad
 				if line.upper() in INVALID_LABEL_NAMES:
-					valid = False
 					errormsg("redefinition of a symbol in the creation of a label")
 					continue
 			
@@ -201,20 +228,20 @@ try:
 			try:
 				instchecker = checkertable[instr]
 			except:
-				valid = False
 				errormsg("invalid opcode: " + instr)
 				continue
 			#bytes for this instruction
 			try:
 				#org needs the current program length
-				if instr == "org":
-					params += [len(allbytes)]
+				if instr in ["org", "include"]:
+					params += [CURRENT_ADDRESS]
 
 				instBytes = instchecker(params)
 			except (ParamError, InstrError) as pe:
-				valid = False
 				errormsg(pe.args[0])
 				continue
+
+			CURRENT_ADDRESS += len(instBytes)
 
 			for byte in instBytes:  #add all things
 				allbytes.append(byte)
@@ -233,7 +260,6 @@ try:
 		#if not a number, check if it is a valid label
 		if allbytes[i] not in labels:
 			errormsg(f"undefined symbol: '{allbytes[i]}'", False)
-			valid = False
 			continue
 
 		#if there is a label for that
@@ -243,25 +269,28 @@ try:
 	#END LABEL FOR
 
 	if valid is True:
-		from pathlib import Path
-		filename = Path(PATH).stem + ".bin"
-		out = open(filename, "wb")
-		out.write(bytes(allbytes))
+		if OUT_MODE == "bin":
+			out = open(OUT_FILENAME, "wb")
+			out.write(bytes(allbytes))
+		elif OUT_MODE == "c-array":
+			out = open(OUT_FILENAME, "w")
+			out.write("{\n")
+			for byte in allbytes:
+				out.write( "\t" + str(byte) + ",\n")
+			out.write("};")
+			out.write("\n\n" + str(len(allbytes)))
 		out.close()
-		print("success!")
+		if QUIET is False:
+			print("success!")
 
-#		print ("{")
-#		for byte in allbytes:
-#			print( "		" + str(byte) + ",")
-#		print("	};")
-#		print("\n\n" + str(len(allbytes)))
 except Exception:
 	import traceback
 	tb_str = traceback.format_exc()
-	print("an error occured:\n", tb_str)
+	errormsg("\n" + tb_str, False)
 
 #remove temp file
-import os
-if os.path.isfile(PATH + ".temp"):
+if os.path.isfile(PATH + ".temp") and KEEP_TEMP_FILES is False:
 	os.remove(PATH + ".temp")
-input("press enter to continue...")
+os.system("pause") if NOPAUSE is False else None
+
+exit(0 if valid is True else 1)

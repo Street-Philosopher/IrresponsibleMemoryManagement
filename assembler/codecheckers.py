@@ -4,9 +4,10 @@
 #   change checking functions very similar to each other to be a single one
 #   change org so it doesnt pad bytes, and create a function to replace the current org
 
-from typing import Callable
-
 #this way we can have the warning function from main to here without circimp
+from posixpath import isabs
+
+
 funcs = []
 
 labels = {}
@@ -1011,6 +1012,30 @@ def org(params):
 	#this means we now have the correct amount of bytes to append
 	return retval
 
+def include(args):
+	from sys import argv
+	import os
+	if len(args) != 2: raise ParamError("invalid number of parameters for include directive")
+	OUT_PATH = "o.tmp"
+	#if there is no abspath set it to the path of the script we're currently assembling
+	path = args[0]
+	if not os.path.isabs(path):
+		path = os.path.dirname(os.path.abspath(argv[1])) + "\\" + path
+
+	#call the assembler
+	assembly_result = os.system(f"{argv[0]} {path} -np -ds -q -org {args[1]} -o {OUT_PATH}")
+	if assembly_result != 0:
+		raise InstrError(f"could not include file '{path}'")
+
+	#add the compile to the current list of bytes
+	with open(OUT_PATH, "rb") as assembledfile:
+		retval = list(assembledfile.read(-1))
+
+	#remove the temp file
+	os.remove(OUT_PATH)
+
+	return retval
+
 #ADD_OPCODE:
 #table that returns the checker function for the given mnemonic
 checkertable = {
@@ -1071,4 +1096,5 @@ checkertable = {
 	#assembler commands
 	"db"		: db,
 	"org"		: org,
+	"include"	: include,
 }

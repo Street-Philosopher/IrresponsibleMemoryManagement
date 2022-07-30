@@ -1,7 +1,5 @@
-assembler/__pycache__
-main
-main.bat
 saveStates
 .vscode
+
 dependencies
-src/__old.txt
+__*
