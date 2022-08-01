@@ -2,7 +2,6 @@
 
 #TODO:
 #   change checking functions very similar to each other to be a single one
-#   change org so it doesnt pad bytes, and create a function to replace the current org
 
 #this way we can have the warning function from main to here without circimp
 from posixpath import isabs
@@ -18,9 +17,11 @@ class ParamError(Exception):
 class InstrError(Exception):
 	pass
 
-def init(warningfunc):
-	global warning
+def init(warningfunc, setcurrentaddrfunc, getcurrentaddrfunc):
+	global warning, setcurrentaddr, getcurrentaddr
 	warning = warningfunc
+	setcurrentaddr = setcurrentaddrfunc
+	getcurrentaddr = getcurrentaddrfunc
 
 #all regular 8-bit registers
 regs = ["A", "B", "C", "D"]
@@ -613,8 +614,13 @@ def ld(params):
 
 	ldc = opcodestable["ld"]	#ld code
 
-	param1 = params[0].upper()
-	param2 = params[1].upper()
+	#support both syntaxes for pointers
+	param1: str = params[0].upper()
+	if "[" in param1 and "]" in param1:
+		param1 = param1.replace("[", "(").replace("]", ")")
+	param2: str = params[1].upper()
+	if "[" in param2 and "]" in param2:
+		param2 = param2.replace("[", "(").replace("]", ")")
 	if param1 in regs:
 		if param2 in regs:	#ld reg,reg
 			if param1 == param2:
@@ -974,6 +980,15 @@ def db(params):
 			Bytes.append(None)
 	return Bytes
 
+def padto(params):
+	if len(params) != 1:
+		raise ParamError("expected one parameter for padto")
+	try:
+		addr = int(params[0], 0)
+	except:
+		raise ParamError("expected an address after 'padto' directive")
+	setcurrentaddr(addr)
+	return []	#no bytes
 def org(params):
 	if len(params) not in [2, 3]:
 		#i swear this makes sense
@@ -982,7 +997,7 @@ def org(params):
 	try:
 		addr = int(params[0], 0)
 	except:
-		raise ParamError("expected an address after 'org' directive")
+		raise ParamError("expected an address after org directive")
 	if addr < params[-1]:
 		raise ParamError("cannot 'org' backwards")
 
@@ -1011,6 +1026,19 @@ def org(params):
 	
 	#this means we now have the correct amount of bytes to append
 	return retval
+def pad(params):
+	#increase current addr by
+	if len(params) not in [0,1]:
+		raise ParamError("expected at maximum one parameter for 'pad'")
+	if len(params) == 0:
+		by_bytes = 1
+	else:
+		try:
+			by_bytes = int(params[0], 0)
+		except:
+			raise ParamError("expected a number of bytes")
+	setcurrentaddr(getcurrentaddr() + by_bytes)
+	return []
 
 def include(args):
 	from sys import argv
@@ -1096,5 +1124,7 @@ checkertable = {
 	#assembler commands
 	"db"		: db,
 	"org"		: org,
+	"padto"		: padto,
+	"pad"		: pad,
 	# "include"	: include,
 }

@@ -29,7 +29,10 @@ def errormsg(msg, showline = True):
 def warning (msg):
 	global linecounter
 	print(Fore.YELLOW + "warning on line " + str(linecounter) + Fore.WHITE + ":", msg, "\n")
-ccinit(warning) #per usare i warning anche nell'altro file
+def setcurrentaddr(addr):
+	global CURRENT_ADDRESS
+	CURRENT_ADDRESS = addr
+ccinit(warning, setcurrentaddr, lambda: CURRENT_ADDRESS) #per usare i warning anche nell'altro file
 del(ccinit)
 
 if len(args) == 2:
@@ -63,7 +66,6 @@ for i in range(2, len(args)):
 		QUIET = True
 	if args[i] == "-org":
 		CURRENT_ADDRESS = int(args[i+1], 0)
-	#TODO: un coso pepr fare uscire i simboli di debug per essere portati nello script principale, un coso per definire costanti DALLO script principale a quelli secondari
 if OUT_FILENAME == -1:
 	OUT_FILENAME = Path(PATH).stem + (".bin" if OUT_MODE == "bin" else ".c")
 print_if_allowed("assembling into", OUT_FILENAME)
@@ -98,7 +100,7 @@ def CustomSplit(string, char):
 	return tokens
 
 #gotta love indentation
-def Preprocessing():	#todo: do comment and other stuff in here
+def Preprocessing():		#todo: check for label definition here
 	global linecounter
 
 	macros = {}

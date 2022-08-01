@@ -45,6 +45,31 @@
 #def SCORE_WIN as 2
 
 
+init:
+	; bad and can be optimised easily but who cares, it's more readable
+	ld a,  BALL_RESTART_POS_P1
+	ld hl, ballXPos
+	ld [hl], a
+	ld a,  BALL_START_YPOS
+	ld hl, ballYPos
+	ld [hl], a
+	ld a,  DIR_TOP_RIGHT
+	ld hl, ballDir
+	ld [hl], a
+	ld a,  112
+	ld hl, p1Position
+	ld [hl], a
+	ld a,  112
+	ld hl, p2Position
+	ld [hl], a
+	ld a,  0
+	ld hl, p1Score
+	ld [hl], a
+	ld a,  0
+	ld hl, p2Score
+	ld [hl], a
+
+
 mainloop:
 
 	call movePlayers
@@ -836,25 +861,25 @@ db 0
 
 
 
-; org 0x8000
 ; variables
+padto 0x8000
 ballXPos:
-db BALL_RESTART_POS_P1
+pad
 ballYPos:
-db BALL_START_YPOS
+pad
 ballDir:
-db DIR_TOP_RIGHT
+pad
 p1Position:	; position of the lowest pixel
-db 112
+pad
 p2Position:
-db 112
+pad
 p1Score:
-db 0
+pad
 p2Score:
-db 0
+pad
 ; temp variables
 tempBallAddrStorage_C:
-db 00
+pad
 tempBallAddrStorage_D:
-db 00
+pad
 
