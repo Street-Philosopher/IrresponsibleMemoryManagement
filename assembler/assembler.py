@@ -11,6 +11,12 @@ This contains the main "body" of the assembler
 The actual syntax of the instructions is in "codecheckers.py"
 """
 
+def print_if_allowed(*values):
+	"""prints only if the ```QUIET``` flag is false"""
+	if QUIET is False:
+		for i in values:
+			print(i, end=" ")
+		print()
 def abort_assembly(msg):
 	print("error:", msg)
 	print("burp")
@@ -49,7 +55,8 @@ for i in range(2, len(args)):
 	if args[i] == "-kt":
 		KEEP_TEMP_FILES = True
 	if args[i] == "-c":
-		OUT_MDOE = "c-array"
+		# OUT_MDOE = "c-array"		#of fucking course it's a misspelling error
+		OUT_MODE = "c-array"
 	if args[i] == "-np":
 		NOPAUSE = True
 	if args[i] == "-q":
@@ -58,10 +65,8 @@ for i in range(2, len(args)):
 		CURRENT_ADDRESS = int(args[i+1], 0)
 	#TODO: un coso pepr fare uscire i simboli di debug per essere portati nello script principale, un coso per definire costanti DALLO script principale a quelli secondari
 if OUT_FILENAME == -1:
-	OUT_FILENAME = Path(PATH).stem + (".bin" if OUT_MODE == "bin" else ".txt")
-#TODO: maybe
-# if os.path.isfile(OUT_FILENAME):
-# 	abort_assembly("output file already exists")
+	OUT_FILENAME = Path(PATH).stem + (".bin" if OUT_MODE == "bin" else ".c")
+print_if_allowed("assembling into", OUT_FILENAME)
 
 #TODO: eval, include
 
@@ -133,8 +138,8 @@ def Preprocessing():	#todo: do comment and other stuff in here
 
 					lines[linecounter - 1] = ""
 					continue
-				elif line[1:8] == "include":
-					line = line[1:]
+				# elif line[1:8] == "include":
+				# 	line = line[1:]
 				else:
 					errormsg("unknown macro \"" + line[1:] + "\"")
 					exit()
@@ -205,7 +210,7 @@ try:
 					warning("redefinition of label '" + line.lower() + "'")
 
 				#create a new entry in label list (without colon)
-				labels[line.lower()] = len(allbytes)
+				labels[line.lower()] = CURRENT_ADDRESS
 
 				continue
 			#END LABEL DEFINITION
@@ -269,19 +274,25 @@ try:
 	#END LABEL FOR
 
 	if valid is True:
+		#plain binary file
 		if OUT_MODE == "bin":
 			out = open(OUT_FILENAME, "wb")
 			out.write(bytes(allbytes))
+		#writes an array of bytes, adding the length of the array as well
 		elif OUT_MODE == "c-array":
 			out = open(OUT_FILENAME, "w")
-			out.write("{\n")
-			for byte in allbytes:
-				out.write( "\t" + str(byte) + ",\n")
-			out.write("};")
-			out.write("\n\n" + str(len(allbytes)))
+			#define a uint8_t type
+			out.write("typedef unsigned char uint8_t;\n\n")
+			#write the length to a variable, and add a comment with the length in hex
+			out.write(f"int program_length = {len(allbytes)};")
+			out.write(f"\t\t// 0x{hex(len(allbytes)).upper()[2:]}\n")
+			#write the array
+			out.write("uint8_t program[] = {\n")
+			for byte in allbytes:	#add padding				#this is to make it look better
+				out.write( "\t0x" + ("0" if byte < 16 else "") + hex(byte).upper()[2:] + ",\n")
+			out.write("};\n")
 		out.close()
-		if QUIET is False:
-			print("success!")
+		print_if_allowed("success!")
 
 except Exception:
 	import traceback

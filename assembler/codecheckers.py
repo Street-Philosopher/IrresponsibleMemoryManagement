@@ -1096,5 +1096,5 @@ checkertable = {
 	#assembler commands
 	"db"		: db,
 	"org"		: org,
-	"include"	: include,
+	# "include"	: include,
 }

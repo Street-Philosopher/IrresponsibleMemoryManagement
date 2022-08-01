@@ -72,17 +72,17 @@ mainloop:
 	jp mainloop
 
 
-#include drawing.asm
+#include "drawing.asm"
 
-#include players.asm
+#include "players.asm"
 
-#include ball.asm
+#include "ball.asm"
 
-#include scoresAndWon.asm
+#include "scoresAndWon.asm"
 
-#include div.asm
+#include "div.asm"
 
-#include graphics.asm
+#include "graphics.asm"
 
 
 ; org 0x8000
