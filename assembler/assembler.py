@@ -24,25 +24,36 @@ def abort_assembly(msg):
 	exit(-1)
 def errormsg(msg, showline = True):
 	global linecounter, valid
-	print(Fore.RED + "error" + (f" on line {str(linecounter)}" if showline is True else "") + Fore.WHITE + ":", msg, "\n")
+	print(Fore.RED + "error" + Fore.WHITE + (f" on line {str(linecounter)} of file {CURRENT_FILE}" if showline is True else "") + ":", msg, "\n")
 	valid = False
 def warning (msg):
 	global linecounter
-	print(Fore.YELLOW + "warning on line " + str(linecounter) + Fore.WHITE + ":", msg, "\n")
+	print(Fore.YELLOW + "warning" + Fore.WHITE + f" on line {str(linecounter)} of file {CURRENT_FILE}:", msg, "\n")
 def setcurrentaddr(addr):
 	global CURRENT_ADDRESS
 	CURRENT_ADDRESS = addr
-ccinit(warning, setcurrentaddr, lambda: CURRENT_ADDRESS) #per usare i warning anche nell'altro file
+ccinit(warning, setcurrentaddr, (lambda: CURRENT_ADDRESS)) #per usare i warning anche nell'altro file
 del(ccinit)
 
 if len(args) == 2:
 	if args[1] == "-h":
-		print;
+		print;	#TODO
 		exit(0)
 
-CURRENT_ADDRESS = 0
-
 PATH = input("path to the file: ") if len(args) <= 1 else args[1]
+
+CURRENT_ADDRESS = 0
+CURRENT_FILE = PATH
+INCLUDE_STACK: list[tuple[str, int]] = []
+
+INTERNAL_COMMAND_PREFIX = ".."
+
+# TODO:
+# 	riordina codice:
+# 	sposta il preprocessor in un file separato,
+# 	sistema i command line arguments,
+# 	rimuovi cose non necessarie (come tutti i toupper / tolower / strip visto che sono fatti già nel preprocessor)
+
 OUT_FILENAME = -1
 KEEP_TEMP_FILES = False
 OUT_MODE = "bin"
@@ -74,14 +85,14 @@ print_if_allowed("assembling into", OUT_FILENAME)
 
 
 #ignores the split if the symbol is between quotes
-def CustomSplit(string, char):
+def CustomSplit(string, char) -> str:
 	tokens = []
 
 	endloop = False
 	isInDoubleQuotes = isInSingleQuotes = False
 
 	while char in string and endloop is False:
-		for x in range(len(string)):
+		for x in range(len(string)):#TODO: cnotrolla
 			if string[x] == '"':
 				isInDoubleQuotes = not isInDoubleQuotes
 			if string[x] == "'":
@@ -100,66 +111,90 @@ def CustomSplit(string, char):
 	return tokens
 
 #gotta love indentation
-def Preprocessing():		#todo: check for label definition here
-	global linecounter
+def Preprocessing():		#TODO: check for label definition here
+	# global linecounter
 
 	macros = {}
 
-	charsToRemove = ["\t", " "]
+	# charsToRemove = ["\t", " "]
 
 	try:
 		FILE = open(PATH)
 		lines = [ line for line in FILE ]
+		newlines = []
 		FILE.close()
 
 		linecounter = 0
-		while linecounter < len(lines):
+		for line in lines:		#TODO: preprocessing nel file incluso
 			#all operations are done on this "line" variable and then reinserted in the array
 			linecounter += 1
-			line: str = lines[linecounter - 1].lower()
+			line = line.lower()
 			
 			if line[-1] == "\n": line = line[:-1]	#remove endline
 
 			line = CustomSplit(line, ";")[0]  #remove comment
 
-			line = line.lstrip()		#remove leading spaces
+			line = line.strip()		#remove leading spaces
+
+			#append empty line, skip everything else as we're now indexing so it would cause errors
 			if line == "":
-				lines[linecounter - 1] = ""
+				newlines.append("")
 				continue
 
-			#remove tabs and spaces at the end of the line
-			while line[-1] in charsToRemove:
-				line = line[:-1]
+			# #remove tabs and spaces at the end of the line
+			# while line[-1] in charsToRemove:
+			# 	line = line[:-1]
 
+
+			#TODO: migliora i comandi qui, troppo strano modificare un comando
 			if line[0] == "#":
-				if line[1:4] == "def":
+				if line[1:7] == "define":
 					#create a macro
-					key = line[5:(line.index("as") - 1)].strip()
+					key = line[8:(line.index("as") - 1)].strip()
 					value = line[(line.index("as") + 3):].strip()
 					macros[key] = value
 
-					lines[linecounter - 1] = ""
+					newlines.append("")
 					continue
-				# elif line[1:8] == "include":
-				# 	line = line[1:]
+				elif line[1:8] == "include":
+					# TODO:
+					# 	do include by writing the contents here and writing metadata to say that we are in a new file;
+					# 	push the current line and filename to some sort of stack when you reach one of those sections when assembling,
+					# 	then reset the linecounter and set the filename to the current one, and once you're done reset the old ones
+					# 	this way we can use errors and warning but simplify the process
+					try:
+						#find the path, absolute or relative. if only a filename is given it's assumed to be in the directory of the main file
+						included_file_name = line[10:-1]
+						if not os.path.isabs(included_file_name):
+							included_file_name = os.path.dirname(os.path.abspath(args[1])) + "\\" + included_file_name
+						
+						#append the contents together with a command stating the beginning and end of an included file has occurred
+						with open(included_file_name) as included_file:
+							newlines.append(f"{INTERNAL_COMMAND_PREFIX}FILE {included_file_name}")
+							for included_line in included_file:
+								newlines.append(included_line)
+							newlines.append(f"{INTERNAL_COMMAND_PREFIX}ENDFILE")
+					except Exception as e:
+						abort_assembly(f"could not include file '{included_file_name}' because an error occured:", e)
 				else:
 					errormsg("unknown macro \"" + line[1:] + "\"")
 					exit()
+			#check for defines only if there are no directives
 			else:
-				#replace in the line
 				for macro in macros:
 					while macro in line:
 						index = line.index(macro)
 						line = line[:index] + macros[macro] + line[(index + len(macro)):]
-			lines[linecounter - 1] = line
+
+			newlines.append(line)
 		#END WHILE
 		with open(PATH + ".temp", "w") as OUTFILE:
-			for line in lines:
+			for line in newlines:
 				OUTFILE.write(line + "\n")
 	except:
 		import traceback
 		tb_str = traceback.format_exc()
-		errormsg("\n" + tb_str)
+		errormsg("\n" + tb_str, False)
 
 
 valid = True #is the file valid?

@@ -2,47 +2,47 @@
 
 
 
-#def PLAYER_HEIGHT as 48
+#define PLAYER_HEIGHT as 48
 
-#def PLAYER_Y_MAX as 206
-#def PLAYER_Y_MIN as 16
+#define PLAYER_Y_MAX as 206
+#define PLAYER_Y_MIN as 16
 
-#def PLAYER_SPEED as 8			; pixels per cycle
+#define PLAYER_SPEED as 8			; pixels per cycle
 
-#def BALL_P1_CONTACT as  24
-#def BALL_P2_CONTACT as 232
-#def BALL_Y_MAX as 240
-#def BALL_Y_MIN as  16
-#def SCORED_TO_P1 as  16
-#def SCORED_TO_P2 as 240
-#def BALL_START_YPOS as 124
-#def BALL_RESTART_POS_P1 as 24
-#def BALL_RESTART_POS_P2 as 232
+#define BALL_P1_CONTACT as  24
+#define BALL_P2_CONTACT as 232
+#define BALL_Y_MAX as 240
+#define BALL_Y_MIN as  16
+#define SCORED_TO_P1 as  16
+#define SCORED_TO_P2 as 240
+#define BALL_START_YPOS as 124
+#define BALL_RESTART_POS_P1 as 24
+#define BALL_RESTART_POS_P2 as 232
 
-#def BALL_SPEED as 8			; pixels per cycle
-#def DIR_TOP_RIGHT as 0
-#def DIR_BTM_RIGHT as 1
-#def DIR_BTM_LEFT as 2
-#def DIR_TOP_LEFT as 3
+#define BALL_SPEED as 8			; pixels per cycle
+#define DIR_TOP_RIGHT as 0
+#define DIR_BTM_RIGHT as 1
+#define DIR_BTM_LEFT as 2
+#define DIR_TOP_LEFT as 3
 
-#def FULL_BLACK as 0x00
-#def FULL_WHITE as 0xFF
+#define FULL_BLACK as 0x00
+#define FULL_WHITE as 0xFF
 
 ; values for movement of the pads
-#def SPEED_NO as 0
-#def SPEED_UP as 1
-#def SPEED_DOWN as 2
+#define SPEED_NO as 0
+#define SPEED_UP as 1
+#define SPEED_DOWN as 2
 
-#def CRAM_INPUT as 0x80
+#define CRAM_INPUT as 0x80
 
-#def FULL_BLACK as 0x00
-#def FULL_WHITE as 0xff
+#define FULL_BLACK as 0x00
+#define FULL_WHITE as 0xff
 
-#def P1_SCORE_ADDR as 0x0168
-#def P2_SCORE_ADDR as 0x0188
-#def PWON_MSG_ADDR as 0x0870
+#define P1_SCORE_ADDR as 0x0168
+#define P2_SCORE_ADDR as 0x0188
+#define PWON_MSG_ADDR as 0x0870
 
-#def SCORE_WIN as 2
+#define SCORE_WIN as 2
 
 
 init:
