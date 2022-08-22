@@ -1,10 +1,8 @@
 #from er import er as er
+from common import warning, setcurrentaddr, inc_addr
 
 #TODO:
 #   change checking functions very similar to each other to be a single one
-
-#this way we can have the warning function from main to here without circimp
-from posixpath import isabs
 
 
 funcs = []
@@ -16,12 +14,6 @@ class ParamError(Exception):
 	pass
 class InstrError(Exception):
 	pass
-
-def init(warningfunc, setcurrentaddrfunc, getcurrentaddrfunc):
-	global warning, setcurrentaddr, getcurrentaddr
-	warning = warningfunc
-	setcurrentaddr = setcurrentaddrfunc
-	getcurrentaddr = getcurrentaddrfunc
 
 #all regular 8-bit registers
 regs = ["A", "B", "C", "D"]
@@ -1037,7 +1029,7 @@ def pad(params):
 			by_bytes = int(params[0], 0)
 		except:
 			raise ParamError("expected a number of bytes")
-	setcurrentaddr(getcurrentaddr() + by_bytes)
+	inc_addr(by_bytes)
 	return []
 
 def include(args):

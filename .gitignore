@@ -1,5 +1,8 @@
 saveStates
 .vscode
 
+assembler/assemble.bat
+assembler/*.bin
+
 dependencies
 __*

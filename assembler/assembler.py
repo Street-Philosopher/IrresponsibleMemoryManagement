@@ -1,9 +1,11 @@
+from importlib.resources import path
 from sys import argv as args
-from colorama import Fore
-from codecheckers import INVALID_LABEL_NAMES, checkertable, InstrError, ParamError, IsLabelNameValid
-from codecheckers import init as ccinit
 from pathlib import Path
-import os
+import os, glob
+
+from preprocessing import Preprocess
+from common import CustomSplit, getcurrentaddr, print_if_allowed, abort_assembly, errormsg, warning, isvalid, setfilename, inc_line, inc_addr, setcurrentaddr, INTERNAL_COMMAND_PREFIX, include_file, end_include, RemoveTempFiles
+from codecheckers import INVALID_LABEL_NAMES, checkertable, InstrError, ParamError, IsLabelNameValid
 
 
 """
@@ -11,42 +13,13 @@ This contains the main "body" of the assembler
 The actual syntax of the instructions is in "codecheckers.py"
 """
 
-def print_if_allowed(*values):
-	"""prints only if the ```QUIET``` flag is false"""
-	if QUIET is False:
-		for i in values:
-			print(i, end=" ")
-		print()
-def abort_assembly(msg):
-	print("error:", msg)
-	print("burp")
-	print(Fore.RED, "assembly aborted", Fore.WHITE)
-	exit(-1)
-def errormsg(msg, showline = True):
-	global linecounter, valid
-	print(Fore.RED + "error" + Fore.WHITE + (f" on line {str(linecounter)} of file {CURRENT_FILE}" if showline is True else "") + ":", msg, "\n")
-	valid = False
-def warning (msg):
-	global linecounter
-	print(Fore.YELLOW + "warning" + Fore.WHITE + f" on line {str(linecounter)} of file {CURRENT_FILE}:", msg, "\n")
-def setcurrentaddr(addr):
-	global CURRENT_ADDRESS
-	CURRENT_ADDRESS = addr
-ccinit(warning, setcurrentaddr, (lambda: CURRENT_ADDRESS)) #per usare i warning anche nell'altro file
-del(ccinit)
-
 if len(args) == 2:
 	if args[1] == "-h":
 		print;	#TODO
 		exit(0)
 
 PATH = input("path to the file: ") if len(args) <= 1 else args[1]
-
-CURRENT_ADDRESS = 0
-CURRENT_FILE = PATH
-INCLUDE_STACK: list[tuple[str, int]] = []
-
-INTERNAL_COMMAND_PREFIX = ".."
+setfilename(PATH)
 
 # TODO:
 # 	riordina codice:
@@ -76,133 +49,15 @@ for i in range(2, len(args)):
 	if args[i] == "-q":
 		QUIET = True
 	if args[i] == "-org":
-		CURRENT_ADDRESS = int(args[i+1], 0)
+		setcurrentaddr(int(args[i+1], 0))
 if OUT_FILENAME == -1:
 	OUT_FILENAME = Path(PATH).stem + (".bin" if OUT_MODE == "bin" else ".c")
 print_if_allowed("assembling into", OUT_FILENAME)
 
 #TODO: eval, include
 
-
-#ignores the split if the symbol is between quotes
-def CustomSplit(string, char) -> str:
-	tokens = []
-
-	endloop = False
-	isInDoubleQuotes = isInSingleQuotes = False
-
-	while char in string and endloop is False:
-		for x in range(len(string)):#TODO: cnotrolla
-			if string[x] == '"':
-				isInDoubleQuotes = not isInDoubleQuotes
-			if string[x] == "'":
-				isInSingleQuotes = not isInSingleQuotes
-
-			if string[x] == char and not (isInSingleQuotes or isInDoubleQuotes):
-				tokens += [string[:x]]
-				string = string[x + 1:]
-				break
-
-			if x == len(string)-1:
-				endloop = True
-				break
-	
-	tokens += [string]		#what's left
-	return tokens
-
-#gotta love indentation
-def Preprocessing():		#TODO: check for label definition here
-	# global linecounter
-
-	macros = {}
-
-	# charsToRemove = ["\t", " "]
-
-	try:
-		FILE = open(PATH)
-		lines = [ line for line in FILE ]
-		newlines = []
-		FILE.close()
-
-		linecounter = 0
-		for line in lines:		#TODO: preprocessing nel file incluso
-			#all operations are done on this "line" variable and then reinserted in the array
-			linecounter += 1
-			line = line.lower()
-			
-			if line[-1] == "\n": line = line[:-1]	#remove endline
-
-			line = CustomSplit(line, ";")[0]  #remove comment
-
-			line = line.strip()		#remove leading spaces
-
-			#append empty line, skip everything else as we're now indexing so it would cause errors
-			if line == "":
-				newlines.append("")
-				continue
-
-			# #remove tabs and spaces at the end of the line
-			# while line[-1] in charsToRemove:
-			# 	line = line[:-1]
-
-
-			#TODO: migliora i comandi qui, troppo strano modificare un comando
-			if line[0] == "#":
-				if line[1:7] == "define":
-					#create a macro
-					key = line[8:(line.index("as") - 1)].strip()
-					value = line[(line.index("as") + 3):].strip()
-					macros[key] = value
-
-					newlines.append("")
-					continue
-				elif line[1:8] == "include":
-					# TODO:
-					# 	do include by writing the contents here and writing metadata to say that we are in a new file;
-					# 	push the current line and filename to some sort of stack when you reach one of those sections when assembling,
-					# 	then reset the linecounter and set the filename to the current one, and once you're done reset the old ones
-					# 	this way we can use errors and warning but simplify the process
-					try:
-						#find the path, absolute or relative. if only a filename is given it's assumed to be in the directory of the main file
-						included_file_name = line[10:-1]
-						if not os.path.isabs(included_file_name):
-							included_file_name = os.path.dirname(os.path.abspath(args[1])) + "\\" + included_file_name
-						
-						#append the contents together with a command stating the beginning and end of an included file has occurred
-						with open(included_file_name) as included_file:
-							newlines.append(f"{INTERNAL_COMMAND_PREFIX}FILE {included_file_name}")
-							for included_line in included_file:
-								newlines.append(included_line)
-							newlines.append(f"{INTERNAL_COMMAND_PREFIX}ENDFILE")
-					except Exception as e:
-						abort_assembly(f"could not include file '{included_file_name}' because an error occured:", e)
-				else:
-					errormsg("unknown macro \"" + line[1:] + "\"")
-					exit()
-			#check for defines only if there are no directives
-			else:
-				for macro in macros:
-					while macro in line:
-						index = line.index(macro)
-						line = line[:index] + macros[macro] + line[(index + len(macro)):]
-
-			newlines.append(line)
-		#END WHILE
-		with open(PATH + ".temp", "w") as OUTFILE:
-			for line in newlines:
-				OUTFILE.write(line + "\n")
-	except:
-		import traceback
-		tb_str = traceback.format_exc()
-		errormsg("\n" + tb_str, False)
-
-
-valid = True #is the file valid?
-global linecounter
-linecounter = 0
-
 #stuff like define, removing comments, etc
-Preprocessing()
+Preprocess(PATH)
 
 #key is name of label, value is address it represents
 labels = { }
@@ -211,9 +66,20 @@ allbytes = []   #all the assembled bytes
 try:
 	with open(PATH + ".temp") as FILE:
 		for line in FILE:
-			linecounter += 1
+			inc_line()
 
 			if line[-1] == "\n": line = line[:-1]	#remove endline
+
+			#check for internal commands
+			if line.startswith(INTERNAL_COMMAND_PREFIX):
+				#set the file name to the included one and line number to zero
+				if line[2:6] == "FILE":
+					include_file(line[7:])
+					continue
+				#we reached the end of the included file, so reset to the previous one
+				elif line[2:] == "ENDFILE":
+					end_include()
+					continue
 
 			#initialisation
 			instBytes = []
@@ -247,7 +113,7 @@ try:
 					warning("redefinition of label '" + line.lower() + "'")
 
 				#create a new entry in label list (without colon)
-				labels[line.lower()] = CURRENT_ADDRESS
+				labels[line.lower()] = getcurrentaddr()
 
 				continue
 			#END LABEL DEFINITION
@@ -276,14 +142,14 @@ try:
 			try:
 				#org needs the current program length
 				if instr in ["org", "include"]:
-					params += [CURRENT_ADDRESS]
+					params += [getcurrentaddr()]
 
 				instBytes = instchecker(params)
 			except (ParamError, InstrError) as pe:
 				errormsg(pe.args[0])
 				continue
 
-			CURRENT_ADDRESS += len(instBytes)
+			inc_addr(len(instBytes))
 
 			for byte in instBytes:  #add all things
 				allbytes.append(byte)
@@ -310,7 +176,7 @@ try:
 		allbytes[i + 1] = addr // 0x100
 	#END LABEL FOR
 
-	if valid is True:
+	if isvalid() is True:
 		#plain binary file
 		if OUT_MODE == "bin":
 			out = open(OUT_FILENAME, "wb")
@@ -337,8 +203,8 @@ except Exception:
 	errormsg("\n" + tb_str, False)
 
 #remove temp file
-if os.path.isfile(PATH + ".temp") and KEEP_TEMP_FILES is False:
-	os.remove(PATH + ".temp")
+if KEEP_TEMP_FILES is False:
+	RemoveTempFiles()
 os.system("pause") if NOPAUSE is False else None
 
-exit(0 if valid is True else 1)
+exit(0 if isvalid() is True else 1)
