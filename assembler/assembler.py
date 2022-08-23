@@ -1,11 +1,9 @@
-from importlib.resources import path
-from sys import argv as args
-from pathlib import Path
-import os, glob
+import os
 
 from preprocessing import Preprocess
 from common import CustomSplit, getcurrentaddr, print_if_allowed, abort_assembly, errormsg, warning, isvalid, setfilename, inc_line, inc_addr, setcurrentaddr, INTERNAL_COMMAND_PREFIX, include_file, end_include, RemoveTempFiles
 from codecheckers import INVALID_LABEL_NAMES, checkertable, InstrError, ParamError, IsLabelNameValid
+from argscheck import PATH, OUT_MODE, OUT_FILENAME, NOPAUSE, KEEP_TEMP_FILES
 
 
 """
@@ -13,47 +11,10 @@ This contains the main "body" of the assembler
 The actual syntax of the instructions is in "codecheckers.py"
 """
 
-if len(args) == 2:
-	if args[1] == "-h":
-		print;	#TODO
-		exit(0)
-
-PATH = input("path to the file: ") if len(args) <= 1 else args[1]
-setfilename(PATH)
-
-# TODO:
+#TODO:
+#	eval
 # 	riordina codice:
-# 	sistema i command line arguments,
 # 	rimuovi cose non necessarie (come tutti i toupper / tolower / strip visto che sono fatti già nel preprocessor)
-
-OUT_FILENAME = -1
-KEEP_TEMP_FILES = False
-OUT_MODE = "bin"
-NOPAUSE = False
-QUIET = False
-#TODO: make this not bad
-for i in range(2, len(args)):
-	if args[i] == "-o":
-		try:
-			OUT_FILENAME = args[i + 1]
-		except:
-			abort_assembly("no filename passed with the '-o' command")
-	if args[i] == "-kt":
-		KEEP_TEMP_FILES = True
-	if args[i] == "-c":
-		# OUT_MDOE = "c-array"		#of fucking course it's a misspelling error
-		OUT_MODE = "c-array"
-	if args[i] == "-np":
-		NOPAUSE = True
-	if args[i] == "-q":
-		QUIET = True
-	if args[i] == "-org":
-		setcurrentaddr(int(args[i+1], 0))
-if OUT_FILENAME == -1:
-	OUT_FILENAME = Path(PATH).stem + (".bin" if OUT_MODE == "bin" else ".c")
-print_if_allowed("assembling into", OUT_FILENAME)
-
-#TODO: eval
 
 #stuff like define, removing comments, etc
 Preprocess(PATH)
