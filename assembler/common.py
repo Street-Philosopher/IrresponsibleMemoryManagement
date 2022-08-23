@@ -5,7 +5,7 @@ INTERNAL_COMMAND_PREFIX = ".."
 
 def print_if_allowed(*values):
 	"""prints only if the ```QUIET``` flag is false"""
-	# if QUIET is False:
+	# if QUIET is False:	#TODO
 	if True:
 		for i in values:
 			print(i, end=" ")

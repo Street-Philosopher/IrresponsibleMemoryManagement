@@ -14,7 +14,7 @@ def Preprocess(file_path):		#TODO: check for label definition here
 			newlines = []						#the lines after preprocessing
 
 		linecounter = 0
-		for line in lines:		#TODO: preprocessing nel file incluso
+		for line in lines:
 			#all operations are done on this "line" variable and then reinserted in the array
 			linecounter += 1
 			line = line.lower()
@@ -42,11 +42,6 @@ def Preprocess(file_path):		#TODO: check for label definition here
 					newlines.append("")
 					continue
 				elif line[1:8] == "include":
-					# TODO:
-					# 	do include by writing the contents here and writing metadata to say that we are in a new file;
-					# 	push the current line and filename to some sort of stack when you reach one of those sections when assembling,
-					# 	then reset the linecounter and set the filename to the current one, and once you're done reset the old ones
-					# 	this way we can use errors and warning but simplify the process
 					try:
 						#find the path, absolute or relative. if only a filename is given it's assumed to be in the directory of the main file
 						included_file_name = line[10:-1]

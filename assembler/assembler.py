@@ -23,7 +23,6 @@ setfilename(PATH)
 
 # TODO:
 # 	riordina codice:
-# 	sposta il preprocessor in un file separato,
 # 	sistema i command line arguments,
 # 	rimuovi cose non necessarie (come tutti i toupper / tolower / strip visto che sono fatti già nel preprocessor)
 
@@ -54,7 +53,7 @@ if OUT_FILENAME == -1:
 	OUT_FILENAME = Path(PATH).stem + (".bin" if OUT_MODE == "bin" else ".c")
 print_if_allowed("assembling into", OUT_FILENAME)
 
-#TODO: eval, include
+#TODO: eval
 
 #stuff like define, removing comments, etc
 Preprocess(PATH)
