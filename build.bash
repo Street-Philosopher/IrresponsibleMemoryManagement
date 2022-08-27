@@ -1,4 +1,6 @@
 
+# FILE_NAME = "IMM8"
+
 #remove main so it doesn't start if we compile and it has errors
 echo deleting the previous build...
 rm main

@@ -93,9 +93,9 @@ instructions:
 101010xx => adc A,reg
 
 #bitwise
-10010xxx => bit x
-10011xxx => res x
-10100xxx => set x
+10010xxx => bit x,A
+10011xxx => res x,A
+10100xxx => set x,A
 10111xxx => flag x #except for flag 0 and flag 1 which don't exist
 
 #loads
@@ -148,7 +148,9 @@ instructions:
 todo:
 more flags
 inc immediate
+jr
 more operations on hl
 other cram settings
 ldv A,(HL+/-)
 banking?
+opzione "stack mode": a seconda del valore cambia qualcosa lo stack, ex 00 => stack = 0xff00 + SP, 01 => stack è a tutta la memoria

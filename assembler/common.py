@@ -12,9 +12,9 @@ def print_if_allowed(*values):
 		print()
 
 def abort_assembly(msg):
-	print("error:", msg)
+	print(_Fore.RED + "error:" + _Fore.WHITE, msg)
 	print("burp")
-	print(_Fore.RED, "assembly aborted", _Fore.WHITE)
+	print(_Fore.RED + "assembly aborted", _Fore.WHITE)
 	exit(-1)
 def errormsg(msg, showline = True):
 	fileinfo = getcurrentfileinfo()
@@ -35,7 +35,7 @@ def isvalid() -> bool:
 current_line = 0
 current_address = 0
 current_file = ""
-include_stack: list[tuple[str, int]] = []
+include_stack = [] #: list[tuple[str, int]] = []
 
 def setfilename(name : str):
 	global current_file
@@ -52,7 +52,7 @@ def inc_line():
 def inc_addr(value : int):
 	global current_address
 	current_address += value
-def getcurrentfileinfo() -> tuple[str, int]:
+def getcurrentfileinfo():# -> tuple[str, int]:
 	"returns a tuple of the form (current file name, current file line)"
 	return (current_file, current_line)
 def getcurrentaddr() -> int:
@@ -80,7 +80,7 @@ def RemoveTempFiles():
 
 
 #ignores the split if the symbol is between quotes
-def CustomSplit(string, char) -> list[str]:
+def CustomSplit(string, char):# -> list[str]:
 	tokens = []
 
 	endloop = False

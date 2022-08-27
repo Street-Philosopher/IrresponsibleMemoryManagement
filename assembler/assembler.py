@@ -1,4 +1,5 @@
 import os
+import sys as sus
 
 from preprocessing import Preprocess
 from common import CustomSplit, getcurrentaddr, print_if_allowed, abort_assembly, errormsg, warning, isvalid, setfilename, inc_line, inc_addr, setcurrentaddr, INTERNAL_COMMAND_PREFIX, include_file, end_include, RemoveTempFiles
@@ -165,6 +166,8 @@ except Exception:
 #remove temp file
 if KEEP_TEMP_FILES is False:
 	RemoveTempFiles()
-os.system("pause") if NOPAUSE is False else None
+if NOPAUSE is False:
+	import platform
+	os.system("pause" if platform.system() == "Windows" else 'read -r -p "Press enter to continue..." key')
 
 exit(0 if isvalid() is True else 1)

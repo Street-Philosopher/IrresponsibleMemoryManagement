@@ -4,6 +4,7 @@
 
 //makes it easier to iterate over all elements in a list/array
 #define foreach(x, y) for(auto x: y)
+#define tforeach(type, x, y) for(type x: y)
 
 #define WINDOW_TITLE (std::string)"IMM-8 Emulator"
 

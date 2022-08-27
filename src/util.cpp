@@ -29,8 +29,6 @@ void cls() {
 	#elif _WIN32
 	system("cls");
 	#endif
-	// cout << "\033[2J\033[0;0H";
-	// cout.flush();
 }
 
 
@@ -112,7 +110,7 @@ vector<string> splitString(const string& s)
 
 //return good if read with no probs
 bool LoadProgramToMemory(string name, byte* memory) {
-	try {
+	// try {
 		FILE* f = fopen(name.c_str(), "rb");		//get file
 		if (f == NULL) throw int(12);
 
@@ -127,8 +125,8 @@ bool LoadProgramToMemory(string name, byte* memory) {
 		fclose(f);						//close
 
 		return 1;
-	}
-	catch(...) { return 0; }
+	// }
+	// catch(...) { return 0; }
 }
 
 void LoadFileErrorMsg() {
@@ -143,7 +141,7 @@ int InstructionLength(byte opcode) {
 	switch(opcode) {
 		//system instructions
 		case 0b00000000:			//nop
-			return 0;
+			return 1;
 		case 0b00000001:			//stop
 			return 1;
 		case 0b00000010:			//halt
@@ -533,15 +531,9 @@ string CodeToMnemonic(byte opcode) {
 			return "pop AB";
 
 		//alu instructions
-		case 0b00100000:
-		case 0b00100001:
-		case 0b00100010:
-		case 0b00100011:
+		case 0b00100000 ... 0b00100011:
 			return "add A," + reg1;
-		case 0b00100100:
-		case 0b00100101:
-		case 0b00100110:
-		case 0b00100111:
+		case 0b00100100 ... 0b00100111:
 			return "sub A," + reg1;
 		case 0b00010011:
 			return "add A,%";
@@ -553,30 +545,17 @@ string CodeToMnemonic(byte opcode) {
 			return "sub HL,&";
 		case 0b00101000:
 			return "and A,%";
-		case 0b00101001:
-		case 0b00101010:
-		case 0b00101011:
+		case 0b00101001 ... 0b00101011:
 			return "and A," + reg1;
-		case 0b00101100:
-		case 0b00101101:
-		case 0b00101110:
-		case 0b00101111:
+		case 0b00101100 ... 0b00101111:
 			return "xor A," + reg1;
 		case 0b00110000:
 			return "or A,%";
-		case 0b00110001:
-		case 0b00110010:
-		case 0b00110011:
+		case 0b00110001 ... 0b00110011:
 			return  "or A," + reg1;
-		case 0b00110100:
-		case 0b00110101:
-		case 0b00110110:
-		case 0b00110111:
+		case 0b00110100 ... 0b00110111:
 			return "inc " + reg1;
-		case 0b00111000:
-		case 0b00111001:
-		case 0b00111010:
-		case 0b00111011:
+		case 0b00111000 ... 0b00111011:
 			return "dec " + reg1;
 		case 0b00111100:
 			return "inc HL";
@@ -588,67 +567,27 @@ string CodeToMnemonic(byte opcode) {
 			return "dec SP";
 		case 0b10000000:
 			return "cmp A,%";
-		case 0b10000001:
-		case 0b10000010:
-		case 0b10000011:
+		case 0b10000001 ... 0b10000011:
 			return "cmp A," + reg1;
-		case 0b01110100:
-		case 0b01110101:
-		case 0b01110110:
-		case 0b01110111:
+		case 0b01110100 ... 0b01110111:
 			return "not " + reg1;
-		case 0b01111000:
-		case 0b01111001:
-		case 0b01111010:
-		case 0b01111011:
+		case 0b01111000 ... 0b01111011:
 			return "ror " + reg1;
-		case 0b01111100:
-		case 0b01111101:
-		case 0b01111110:
-		case 0b01111111:
+		case 0b01111100 ... 0b01111111:
 			return "rol " + reg1;
 		case 0b00010100:
 			return "add HL,AB";
-		case 0b10101000:
-		case 0b10101001:
-		case 0b10101010:
-		case 0b10101011:
+		case 0b10101000 ... 0b10101011:
 			return "adc A," + reg1;
 
 		//bit operations
-		case 0b10010000:
-		case 0b10010001:
-		case 0b10010010:
-		case 0b10010011:
-		case 0b10010100:
-		case 0b10010101:
-		case 0b10010110:
-		case 0b10010111:
+		case 0b10010000 ... 0b10010111:
 			return "bit " + to_string(opcode % 8) + ",A";
-		case 0b10011000:
-		case 0b10011001:
-		case 0b10011010:
-		case 0b10011011:
-		case 0b10011100:
-		case 0b10011101:
-		case 0b10011110:
-		case 0b10011111:
+		case 0b10011000 ... 0b10011111:
 			return "res " + to_string(opcode % 8) + ",A";
-		case 0b10100000:
-		case 0b10100001:
-		case 0b10100010:
-		case 0b10100011:
-		case 0b10100100:
-		case 0b10100101:
-		case 0b10100110:
-		case 0b10100111:
+		case 0b10100000 ... 0b10100111:
 			return "set " + to_string(opcode % 8) + ",A";
-		case 0b10111010:
-		case 0b10111011:
-		case 0b10111100:
-		case 0b10111101:
-		case 0b10111110:
-		case 0b10111111:
+		case 0b10111010 ... 0b10111111:
 		// case 0b10111000:
 		// case 0b10111001:
 			return "flag " + to_string(opcode % 8);
@@ -671,10 +610,7 @@ string CodeToMnemonic(byte opcode) {
 		// case 0b01001010:
 		// case 0b01001111:
 			return "ld " + reg2 + "," + reg1;
-		case 0b01010000:
-		case 0b01010001:
-		case 0b01010010:
-		case 0b01010011:
+		case 0b01010000 ... 0b01010011:
 			return "ld " + reg1 + ",%";
 		case 0b00010001:
 			return "ld A,H";
@@ -684,15 +620,9 @@ string CodeToMnemonic(byte opcode) {
 			return "ld H,A";
 		case 0b01011111:
 			return "ld L,A";
-		case 0b01010100:
-		case 0b01010101:
-		case 0b01010110:
-		case 0b01010111:
+		case 0b01010100 ... 0b01010111:
 			return "ld " + reg1 + ",(HL)";
-		case 0b01011000:
-		case 0b01011001:
-		case 0b01011010:
-		case 0b01011011:
+		case 0b01011000 ... 0b01011011:
 			return "ld (HL)," + reg1;
 		case 0b01011100:
 			return "ld HL,&";
@@ -700,47 +630,23 @@ string CodeToMnemonic(byte opcode) {
 			return "ld HL,AB";
 		case 0b11000010:
 			return "ld AB,HL";
-		case 0b01100000:
-		case 0b01100001:
-		case 0b01100010:
-		case 0b01100011:
+		case 0b01100000 ... 0b01100011:
 			return "ld (&)," + reg1;
-		case 0b01100100:
-		case 0b01100101:
-		case 0b01100110:
-		case 0b01100111:
+		case 0b01100100 ... 0b01100111:
 			return "ld " + reg1 + ",(&)";
-		case 0b01101000:
-		case 0b01101001:
-		case 0b01101010:
-		case 0b01101011:
+		case 0b01101000 ... 0b01101011:
 			return "ldi " + reg1 + ",(HL)";
-		case 0b01101100:
-		case 0b01101101:
-		case 0b01101110:
-		case 0b01101111:
+		case 0b01101100 ... 0b01101111:
 			return "ldi (HL)," + reg1;
-		case 0b10000100:
-		case 0b10000101:
-		case 0b10000110:
-		case 0b10000111:
+		case 0b10000100 ... 0b10000111:
 			return "ldd " + reg1 + ",(HL)";
-		case 0b10001000:
-		case 0b10001001:
-		case 0b10001010:
-		case 0b10001011:
+		case 0b10001000 ... 0b10001011:
 			return "ldd (HL)," + reg1;
 		
 		//video instructions
-		case 0b10101100:
-		case 0b10101101:
-		case 0b10101110:
-		case 0b10101111:
+		case 0b10101100 ... 0b10101111:
 			return "stv (&)," + reg1;
-		case 0b10110000:
-		case 0b10110001:
-		case 0b10110010:
-		case 0b10110011:
+		case 0b10110000 ... 0b10110011:
 			return "ldv " + reg1 + ",(&)";
 		case 0b10110100:
 			return "stv (HL),A";

@@ -68,7 +68,7 @@ def StringToBytes(string, maxlength = -1):
 
 	return list(bb)
 
-def GetBytesFromImmediate(param: str, maxbytes = -1) -> list[int]:
+def GetBytesFromImmediate(param: str, maxbytes = -1):# -> list[int]:
 	#exceptions must be handled outside of this function
 
 	if param[0] == param[-1] == '"' or param[0] == param[-1] == "'":	#this is so stupid I love it
@@ -129,7 +129,7 @@ opcodestable = {
 	"bit"		: 0b1001_0000,
 	"res"		: 0b1001_1000,
 	"set"		: 0b1010_0000,
-	"flag"		: 0b1000_1100,
+	"flag"		: 0b1011_1000,
 
 	#loads
 	"ld"		: 0b0100_0000,
@@ -181,38 +181,27 @@ def halt(param):
 
 def jp(param):
 	if len(param) == 1:	#no conditionals
-		param = param[0].upper()
-		if param == "(HL)":
-			return [opcodestable["jp"] + 0b0110_1100]
-		
-		try:
-			val = int(param, 0)
-			if val != val & 0xFFFF:
-				val &= 0xFFFF
-				warning("address too large, changed to " + str(val))
-			return [opcodestable["jp"], val % 0x100, val // 0x100]
-		except:
-			#the signal that this is to be added to the label waiting list is the name of the label
-			#labels are case insensitive because i said so
-			return [ opcodestable["jp"], param.lower(), None ]
-	if len(param) == 2:	#there's a conditional
-		cond = param[0].upper()
+		cond = 0
+		addr = param[0].upper()
+	elif len(param) == 2:	#there's a conditional
+		cond = CheckConditional(param[0].upper())
 		addr = param[1].upper()
-		cond = CheckConditional(cond)
+	else:
+		raise ParamError("invalid parameter number for jp")
 
-		if addr == "(HL)":
-			return [opcodestable["jp"] + cond]	#we add the condition as offset
-		
-		try:
-			val = int(addr, 0)
-			if val != val & 0xFFFF:
-				val &= 0xFFFF
-				warning("address too large, changed to " + str(val))
-			return [(opcodestable["jp"] + cond), val % 0x100, val // 0x100]
-		except:
-			#add to label waiting list
-			return [ (opcodestable["jp"] + cond), addr.lower(), None ]
-	raise ParamError("invalid parameter number for jp")
+	if addr == "(HL)":
+		return [opcodestable["jp"] + 0b0110_1100 + cond]	#we add the condition as offset
+	
+	try:
+		val = int(addr, 0)
+		if val != val & 0xFFFF:
+			val &= 0xFFFF
+			warning("address too large, changed to " + str(val))
+		return [(opcodestable["jp"] + cond), val % 0x100, val // 0x100]
+	except:
+		#the signal that this is to be added to the label waiting list is the name of the label
+		#labels are case insensitive because i said so
+		return [ (opcodestable["jp"] + cond), addr.lower(), None ]
 def jnz(param):
 	if len(param) != 1:
 		raise ParamError("expected one parameter for jnz")
@@ -234,35 +223,27 @@ def jz(param):
 
 def call(param):
 	if len(param) == 1:	#no conditionals
-		param = param[0].upper()
-		if param == "(HL)":
-			return [opcodestable["call"] + 0b0001_0100]
-		
-		try:
-			val = int(param, 0)
-			if val != val & 0xFFFF:
-				val &= 0xFFFF
-				warning("address too large, changed to " + str(val))
-			return [opcodestable["call"], val % 0x100, val // 0x100]
-		except:
-			return [ opcodestable["call"], param.lower(), None ]
-	if len(param) == 2:	#there's a conditional
-		cond = param[0].upper()
+		cond = 0
+		addr = param[0].upper()
+	elif len(param) == 2:	#there's a conditional
+		cond = CheckConditional(param[0].upper())
 		addr = param[1].upper()
-		cond = CheckConditional(cond)
+	else:
+		raise ParamError("invalid parameter number for call")
 
-		if addr == "(HL)":
-			return [opcodestable["call"] + cond]	#we add the condition as offset
-		
-		try:
-			val = int(addr, 0)
-			if val != val & 0xFFFF:
-				val &= 0xFFFF
-				warning("address too large, changed to " + str(val))
-			return [(opcodestable["call"] + cond), val % 0x100, val // 0x100]
-		except:
-			return [ opcodestable["call"] + cond, addr.lower(), None ]
-	raise ParamError("invalid param number for call")
+	if addr == "(HL)":
+		return [opcodestable["call"] + 0b0001_0100 + cond]	#we add the condition as offset
+	
+	try:
+		val = int(addr, 0)
+		if val != val & 0xFFFF:
+			val &= 0xFFFF
+			warning("address too large, changed to " + str(val))
+		return [(opcodestable["call"] + cond), val % 0x100, val // 0x100]
+	except:
+		#the signal that this is to be added to the label waiting list is the name of the label
+		#labels are case insensitive because i said so
+		return [ (opcodestable["call"] + cond), addr.lower(), None ]
 def cnz(param):
 	if len(param) != 1:
 		raise ParamError("expected one parameter for cnz")
@@ -613,6 +594,7 @@ def ld(params):
 	param2: str = params[1].upper()
 	if "[" in param2 and "]" in param2:
 		param2 = param2.replace("[", "(").replace("]", ")")
+
 	if param1 in regs:
 		if param2 in regs:	#ld reg,reg
 			if param1 == param2:
@@ -670,7 +652,7 @@ def ld(params):
 
 		try:
 			val = GetBytesFromImmediate(params[1], maxbytes=1)
-			return [ ldc + regs.index(param1) ] + val
+			return [ ldc + 0b0001_0000 + regs.index(param1) ] + val
 		except:
 			raise ParamError(f"invalid parameter for load to address '{params[1]}'")
 	#END of the "ld to reg" section
@@ -937,7 +919,7 @@ def ldh(params):
 			val
 		]
 	elif params[1].upper() == "A":
-		if params[1][0] != "(" or params[1][-1] != ")":
+		if params[0][0] != "(" or params[0][-1] != ")":
 			raise ParamError("expected an address as first parameter to ldh")
 		params[0] = params[0][1:-1]
 

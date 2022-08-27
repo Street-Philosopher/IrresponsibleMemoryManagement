@@ -408,10 +408,7 @@ void CPU_T::exec(byte opcode) {
 				}
 				break;
 			//jp &imm16
-			case 0b00000100:
-			case 0b00000101:
-			case 0b00000110:
-			case 0b00000111:
+			case 0b00000100 ... 0b00000111:
 				b1 = ReadNext();
 				b2 = ReadNext();
 				w1 = b1 + (0x100 * b2);
@@ -433,10 +430,7 @@ void CPU_T::exec(byte opcode) {
 				}
 				break;
 			//jp (HL)
-			case 0b01110000:
-			case 0b01110001:
-			case 0b01110010:
-			case 0b01110011:
+			case 0b01110000 ... 0b01110011:
 				switch (opcode & 0b11) {
 					case 0:
 						jp(HL);
@@ -453,10 +447,7 @@ void CPU_T::exec(byte opcode) {
 				}
 				break;
 			//call &imm16
-			case 0b00001000:
-			case 0b00001001:
-			case 0b00001010:
-			case 0b00001011:
+			case 0b00001000 ... 0b00001011:
 				b1 = ReadNext();
 				b2 = ReadNext();    //read two bytes of params
 				w1 = b1 + (0x100 * b2);
@@ -477,10 +468,7 @@ void CPU_T::exec(byte opcode) {
 				}
 				break;
 			//call (HL)
-			case 0b00011100:
-			case 0b00011101:
-			case 0b00011110:
-			case 0b00011111:
+			case 0b00011100 ... 0b00011111:
 				switch (opcode & 0b11) {
 					case 0:				//unconditional
 						call(HL);
@@ -497,10 +485,7 @@ void CPU_T::exec(byte opcode) {
 				}
 				break;
 			//ret
-			case 0b00001100:
-			case 0b00001101:
-			case 0b00001110:
-			case 0b00001111:
+			case 0b00001100 ... 0b00001111:
 				switch (opcode & 0b11) {
 					case 0:				//unconditional ret
 						ret();
@@ -535,18 +520,12 @@ void CPU_T::exec(byte opcode) {
 
 			//alu instructions
 			//add A,reg
-			case 0b00100000:
-			case 0b00100001:
-			case 0b00100010:
-			case 0b00100011:
-				add(&A, GetRegPtr(opcode & 0b11));
+			case 0b00100000 ...0b00100011:
 						//this gets the register to use
+				add(&A, GetRegPtr(opcode & 0b11));
 				break;
 			//sub A,reg
-			case 0b00100100:
-			case 0b00100101:
-			case 0b00100110:
-			case 0b00100111:
+			case 0b00100100 ... 0b00100111:
 				sub(&A, GetRegPtr(opcode & 0b11));
 				break;
 			case 0b00010011:					//add A,%imm
@@ -573,16 +552,11 @@ void CPU_T::exec(byte opcode) {
 				And(&A, &b1);
 				break;
 			//and A,reg
-			case 0b00101001:
-			case 0b00101010:
-			case 0b00101011:
+			case 0b00101001 ... 0b00101011:
 				And(&A, GetRegPtr(opcode & 0b11));
 				break;
 			//xor A,reg
-			case 0b00101100:
-			case 0b00101101:
-			case 0b00101110:
-			case 0b00101111:
+			case 0b00101100 ... 0b00101111:
 				Xor(&A, GetRegPtr(opcode & 0b11));
 				break;
 			//or  A,%imm
@@ -591,23 +565,15 @@ void CPU_T::exec(byte opcode) {
 				Or(&A, &b1);
 				break;
 			//or  A,reg
-			case 0b00110001:
-			case 0b00110010:
-			case 0b00110011:
+			case 0b00110001 ... 0b00110011:
 				Or (&A, GetRegPtr(opcode & 0b11));
 				break;
 			//inc reg
-			case 0b00110100:
-			case 0b00110101:
-			case 0b00110110:
-			case 0b00110111:
+			case 0b00110100 ... 0b00110111:
 				inc(GetRegPtr(opcode & 0b11));
 				break;
 			//dec reg
-			case 0b00111000:
-			case 0b00111001:
-			case 0b00111010:
-			case 0b00111011:
+			case 0b00111000 ... 0b00111011:
 				dec(GetRegPtr(opcode & 0b11));
 				break;
 			case 0b00111100:					//inc HL
@@ -627,30 +593,19 @@ void CPU_T::exec(byte opcode) {
 				cmp(&A, &b1);
 				break;
 			//cmp A,reg
-			case 0b10000001:
-			case 0b10000010:
-			case 0b10000011:
+			case 0b10000001 ... 0b10000011:
 				cmp(&A, GetRegPtr(opcode & 0b11));
 				break;
 			//not reg
-			case 0b01110100:
-			case 0b01110101:
-			case 0b01110110:
-			case 0b01110111:
+			case 0b01110100 ... 0b01110111:
 				Not(GetRegPtr(opcode & 0b11));
 				break;
 			//ror reg
-			case 0b01111000:
-			case 0b01111001:
-			case 0b01111010:
-			case 0b01111011:
+			case 0b01111000 ... 0b01111011:
 				ror(GetRegPtr(opcode & 0b11));
 				break;
 			//rol reg
-			case 0b01111100:
-			case 0b01111101:
-			case 0b01111110:
-			case 0b01111111:
+			case 0b01111100 ... 0b01111111:
 				rol(GetRegPtr(opcode & 0b11));
 				break;
 			case 0b00010100:					//add HL,AB
@@ -658,10 +613,7 @@ void CPU_T::exec(byte opcode) {
 				addhl(w1);
 				break;
 			//adc A,reg
-			case 0b10101000:
-			case 0b10101001:
-			case 0b10101010:
-			case 0b10101011:
+			case 0b10101000 ... 0b10101011:
 				b1 = GetFlag(1);	//if carry set bit to 1
 				add(&A, GetRegPtr(opcode & 0b11));
 				add(&A, &b1);		//add to carry flag
@@ -670,80 +622,51 @@ void CPU_T::exec(byte opcode) {
 
 			//bit operations
 			//bit x,A
-			case 0b10010000:
-			case 0b10010001:
-			case 0b10010010:
-			case 0b10010011:
-			case 0b10010100:
-			case 0b10010101:
-			case 0b10010110:
-			case 0b10010111:
+			case 0b10010000 ... 0b10010111:
 				bit(opcode & 0b111);
 				break;
 			//res x,A
-			case 0b10011000:
-			case 0b10011001:
-			case 0b10011010:
-			case 0b10011011:
-			case 0b10011100:
-			case 0b10011101:
-			case 0b10011110:
-			case 0b10011111:
+			case 0b10011000 ... 0b10011111:
 				res(opcode & 0b111);
 				break;
 			//set x,A
-			case 0b10100000:
-			case 0b10100001:
-			case 0b10100010:
-			case 0b10100011:
-			case 0b10100100:
-			case 0b10100101:
-			case 0b10100110:
-			case 0b10100111:
+			case 0b10100000 ... 0b10100111:
 				set(opcode & 0b111);
 				break;
 			
 			//flag x
 			// case 0b10111000:
 			// case 0b10111001:
-			case 0b10111010:
-			case 0b10111011:
-			case 0b10111100:
-			case 0b10111101:
-			case 0b10111110:
-			case 0b10111111:
+			case 0b10111010 ... 0b10111111:
 				bit(opcode & 0b111, &F);	//it's really just a fancy "bit x". only difference it's on the F register
 				break;
 
 
 			//load instructions
 			//ld reg1,reg2
-			case 0b01000000:
 			case 0b01000001:
 			case 0b01000010:
 			case 0b01000011:
 			case 0b01000100:
-			case 0b01000101:
 			case 0b01000110:
 			case 0b01000111:
 			case 0b01001000:
 			case 0b01001001:
-			case 0b01001010:
 			case 0b01001011:
 			case 0b01001100:
 			case 0b01001101:
 			case 0b01001110:
-			case 0b01001111:
+			// case 0b01000000:
+			// case 0b01000101:
+			// case 0b01001010:
+			// case 0b01001111:
 				ld(
 					GetRegPtr((opcode % 0b10000) / 0b100),		//gets bits 2 and 3
 					GetRegPtr(opcode & 0b11)						//gets bits 0 and 1
 				);
 				break;
 			//ld reg,%imm
-			case 0b01010000:
-			case 0b01010001:
-			case 0b01010010:
-			case 0b01010011:
+			case 0b01010000 ... 0b01010011:
 				b1 = ReadNext();			//parameter
 				ld(
 					GetRegPtr(opcode & 0b11),						//get register
@@ -755,7 +678,7 @@ void CPU_T::exec(byte opcode) {
 				ld (&A, &b1);
 				break;
 			case 0b00010010:					//ld A,L
-				b1 = HL / 0x100;
+				b1 = HL % 0x100;
 				ld (&A, &b1);
 				break;
 			case 0b01011110:					//ld H,A
@@ -766,25 +689,20 @@ void CPU_T::exec(byte opcode) {
 				break;
 			case 0b01011111:					//ld L,A
 				w1 = HL / 0x100;	//it means we keep high
+				w1 *= 0x100;
+				//add A, to replace L
 				w1 += A;
 
 				ldhl(&HL, w1);
 				break;
 			//ld reg,(HL)
-			case 0b01010100:
-			case 0b01010101:
-			case 0b01010110:
-			case 0b01010111:
+			case 0b01010100 ... 0b01010111:
 				b1 = ReadMemory(HL);					//read what's in HL
 				ld(GetRegPtr(opcode & 0b11), &b1);			//load it in the register
 				break;
 			//ld (HL),reg
-			case 0b01011000:
-			case 0b01011001:
-			case 0b01011010:
-			case 0b01011011:
-				w1 = ReadMemory(HL);					//address where stuff wil be stored
-				WriteMemory(w1, GetRegVal(opcode & 0b11));
+			case 0b01011000 ... 0b01011011:
+				WriteMemory(HL, GetRegVal(opcode & 0b11));
 				break;
 			case 0b01011100:					//ld HL,%imm16
 				w1 = ReadNext();			//low
@@ -801,55 +719,37 @@ void CPU_T::exec(byte opcode) {
 				B = HL & 0xFF;
 				break;
 			//ld (&imm),reg
-			case 0b01100000:
-			case 0b01100001:
-			case 0b01100010:
-			case 0b01100011:
+			case 0b01100000 ... 0b01100011:
 				w1 = ReadNext();
 				w1 += 0x100 * ReadNext();
 				WriteMemory(w1, GetRegVal(opcode & 0b11));
 				break;
 			//ld reg,(&imm)
-			case 0b01100100:
-			case 0b01100101:
-			case 0b01100110:
-			case 0b01100111:
+			case 0b01100100 ... 0b01100111:
 				w1 = ReadNext();
 				w1 += 0x100 * ReadNext();
 				b1 = ReadMemory(w1);
 				ld(GetRegPtr(opcode & 0b11), &b1);
 				break;
 			//ldi reg,(HL)
-			case 0b01101000:
-			case 0b01101001:
-			case 0b01101010:
-			case 0b01101011:
+			case 0b01101000 ... 0b01101011:
 				b1 = ReadMemory(HL);					//read what's in HL
 				inc(&HL);		//this way we set flags
 				ld(GetRegPtr(opcode & 0b11), &b1);			//load it in the register
 				break;
 			//ldi (HL),reg
-			case 0b01101100:
-			case 0b01101101:
-			case 0b01101110:
-			case 0b01101111:
+			case 0b01101100 ... 0b01101111:
 				WriteMemory(HL, GetRegVal(opcode & 0b11));
 				inc(&HL);
 				break;
 			//ldd reg,(HL)
-			case 0b10000100:
-			case 0b10000101:
-			case 0b10000110:
-			case 0b10000111:
+			case 0b10000100 ... 0b10000111:
 				b1 = ReadMemory(HL);					//read what's in HL
 				dec(&HL);
 				ld(GetRegPtr(opcode & 0b11), &b1);			//load it in the register
 				break;
 			//ldd (HL),reg
-			case 0b10001000:
-			case 0b10001001:
-			case 0b10001010:
-			case 0b10001011:
+			case 0b10001000 ... 0b10001011:
 				WriteMemory(HL, GetRegVal(opcode & 0b11));
 				dec(&HL);
 				break;
@@ -857,19 +757,13 @@ void CPU_T::exec(byte opcode) {
 			
 			//video
 			//stv (&imm),reg
-			case 0b10101100:
-			case 0b10101101:
-			case 0b10101110:
-			case 0b10101111:
+			case 0b10101100 ... 0b10101111:
 				w1 = ReadNext();
 				w1 += 0x100 * ReadNext();
 				stv(w1, GetRegVal(opcode & 0b11));
 				break;
 			//ldv reg,(&imm)
-			case 0b10110000:
-			case 0b10110001:
-			case 0b10110010:
-			case 0b10110011:
+			case 0b10110000 ... 0b10110011:
 				w1 = ReadNext();
 				w1 += 0x100 * ReadNext();
 				ldv(GetRegPtr(opcode & 0b11), w1);
