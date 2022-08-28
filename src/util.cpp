@@ -140,198 +140,122 @@ int InstructionLength(byte opcode) {
 
 	switch(opcode) {
 		//system instructions
-		case 0b00000000:			//nop
+		//nop
+		case 0b00000000:
 			return 1;
-		case 0b00000001:			//stop
+		//stop
+		case 0b00000001:
 			return 1;
-		case 0b00000010:			//halt
+		//halt
+		case 0b00000010:
 			return 1;
-		case 0b00000100:			//jp &addr
+		//jp &addr
+		case 0b00000100 ... 0b00000111:
 			return 3;
-		case 0b00000101:
+		//jp (HL)
+		case 0b01110000 ... 0b01110011:
+		//call &addr
+		case 0b00001000 ... 0b00001011:
 			return 3;
-		case 0b00000110:
-			return 3;
-		case 0b00000111:
-			return 3;
-		case 0b01110000:			//jp (HL)
+		//call (HL)
+		case 0b00011100 ... 0b00011111:
 			return 1;
-		case 0b01110001:
+		//ret
+		case 0b00001100 ... 0b00001111:
 			return 1;
-		case 0b01110010:
-			return 1;
-		case 0b01110011:
-			return 1;
-		case 0b00001000:			//call &addr
-			return 3;
-		case 0b00001001:
-			return 3;
-		case 0b00001010:
-			return 3;
-		case 0b00001011:
-			return 3;
-		case 0b00011100:			//call (HL)
-			return 1;
-		case 0b00011101:
-			return 1;
-		case 0b00011110:
-			return 1;
-		case 0b00011111:
-			return 1;
-		case 0b00001100:			//ret
-			return 1;
-		case 0b00001101:
-			return 1;
-		case 0b00001110:
-			return 1;
-		case 0b00001111:
-			return 1;
-		case 0b00011000:			//push HL
-			return 1;
-		case 0b00011001:			//push AB
-			return 1;
-		case 0b00011010:			//pop HL
-			return 1;
-		case 0b00011011:			//pop AB
+		//push HL
+		case 0b00011000:
+		//push AB
+		case 0b00011001:
+		//pop HL
+		case 0b00011010:
+		//pop AB
+		case 0b00011011:
 			return 1;
 
 		//alu instructions
 		//add A,reg
-		case 0b00100000:
-		case 0b00100001:
-		case 0b00100010:
-		case 0b00100011:
+		case 0b00100000 ... 0b00100011:
 			return 1;
 		//sub A,reg
-		case 0b00100100:
-		case 0b00100101:
-		case 0b00100110:
-		case 0b00100111:
+		case 0b00100100 ... 0b00100111:
 			return 1;
-		case 0b00010011:					//add A,%imm
+		//add A,%imm
+		case 0b00010011:
 			return 2;
-		case 0b00010101:					//sub A,%imm
+		//sub A,%imm
+		case 0b00010101:
 			return 2;
-		case 0b11000000:					//add HL,&imm
+		//add HL,&imm
+		case 0b11000000:
 			return 3;
-		case 0b11000001:					//sub HL,&imm
+		//sub HL,&imm
+		case 0b11000001:
 			return 3;
 		//and A,%imm
 		case 0b00101000:
 			return 2;
 		//and A,reg
-		case 0b00101001:
-		case 0b00101010:
-		case 0b00101011:
+		case 0b00101001 ... 0b00101011:
 			return 1;
 		//xor A,reg
-		case 0b00101100:
-		case 0b00101101:
-		case 0b00101110:
-		case 0b00101111:
+		case 0b00101100 ... 0b00101111:
 			return 1;
 		//or  A,%imm
 		case 0b00110000:
 			return 2;
 		//or  A,reg
-		case 0b00110001:
-		case 0b00110010:
-		case 0b00110011:
+		case 0b00110001 ... 0b00110011:
 			return 1;
 		//inc reg
-		case 0b00110100:
-		case 0b00110101:
-		case 0b00110110:
-		case 0b00110111:
+		case 0b00110100 ... 0b00110111:
 			return 1;
 		//dec reg
-		case 0b00111000:
-		case 0b00111001:
-		case 0b00111010:
-		case 0b00111011:
+		case 0b00111000 ... 0b00111011:
 			return 1;
-		case 0b00111100:					//inc HL
+		//inc HL
+		case 0b00111100:
+		//inc SP
+		case 0b00111101:
+		//dec HL
+		case 0b00111110:
+		//dec SP
+		case 0b00111111:
 			return 1;
-		case 0b00111101:					//inc SP
-			return 1;
-		case 0b00111110:					//dec HL
-			return 1;
-		case 0b00111111:					//dec SP
-			return 1;
-		case 0b10000000:					//cmp A,%imm
+		//cmp A,%imm
+		case 0b10000000:
 			return 2;
 		//cmp A,reg
-		case 0b10000001:
-		case 0b10000010:
-		case 0b10000011:
+		case 0b10000001 ... 0b10000011:
 			return 1;
 		//not reg
-		case 0b01110100:
-		case 0b01110101:
-		case 0b01110110:
-		case 0b01110111:
+		case 0b01110100 ... 0b01110111:
 			return 1;
 		//ror reg
-		case 0b01111000:
-		case 0b01111001:
-		case 0b01111010:
-		case 0b01111011:
+		case 0b01111000 ... 0b01111011:
 			return 1;
 		//rol reg
-		case 0b01111100:
-		case 0b01111101:
-		case 0b01111110:
-		case 0b01111111:
+		case 0b01111100 ... 0b01111111:
 			return 1;
-		case 0b00010100:					//add HL,AB
+		//add HL,AB
+		case 0b00010100:
 			return 1;
 		//adc A,reg
-		case 0b10101000:
-		case 0b10101001:
-		case 0b10101010:
-		case 0b10101011:
+		case 0b10101000 ... 0b10101011:
 			return 1;
 
 		//bit operations
 		//bit x,A
-		case 0b10010000:
-		case 0b10010001:
-		case 0b10010010:
-		case 0b10010011:
-		case 0b10010100:
-		case 0b10010101:
-		case 0b10010110:
-		case 0b10010111:
+		case 0b10010000 ... 0b10010111:
 			return 1;
 		//res x,A
-		case 0b10011000:
-		case 0b10011001:
-		case 0b10011010:
-		case 0b10011011:
-		case 0b10011100:
-		case 0b10011101:
-		case 0b10011110:
-		case 0b10011111:
+		case 0b10011000 ... 0b10011111:
 			return 1;
 		//set x,A
-		case 0b10100000:
-		case 0b10100001:
-		case 0b10100010:
-		case 0b10100011:
-		case 0b10100100:
-		case 0b10100101:
-		case 0b10100110:
-		case 0b10100111:
+		case 0b10100000 ... 0b10100111:
 			return 1;
 		//flag x
-		case 0b10111010:
-		case 0b10111011:
-		case 0b10111100:
-		case 0b10111101:
-		case 0b10111110:
-		case 0b10111111:
-		// case 0b10111000:
-		// case 0b10111001:
+		case 0b10111010 ... 0b10111111:
 			return 1;		
 
 		//load instructions
@@ -354,102 +278,73 @@ int InstructionLength(byte opcode) {
 		// case 0b01001111:
 			return 1;
 		//ld reg,%imm
-		case 0b01010000:
-		case 0b01010001:
-		case 0b01010010:
-		case 0b01010011:
+		case 0b01010000 ... 0b01010011:
 			return 2;
-		case 0b00010001:					//ld A,H
-			return 1;
-		case 0b00010010:					//ld A,L
-			return 1;
-		case 0b01011110:					//ld H,A
-			return 1;
-		case 0b01011111:					//ld L,A
+		//ld A,H
+		case 0b00010001:
+		//ld A,L
+		case 0b00010010:
+		//ld H,A
+		case 0b01011110:
+		//ld L,A
+		case 0b01011111:
 			return 1;
 		//ld reg,(HL)
-		case 0b01010100:
-		case 0b01010101:
-		case 0b01010110:
-		case 0b01010111:
+		case 0b01010100 ... 0b01010111:
 			return 1;
 		//ld (HL),reg
-		case 0b01011000:
-		case 0b01011001:
-		case 0b01011010:
-		case 0b01011011:
+		case 0b01011000 ... 0b01011011:
 			return 1;
-		case 0b01011100:					//ld HL,&imm
+		//ld HL,&imm
+		case 0b01011100:
 			return 3;
-		case 0b01011101:					//ld HL,AB
+		//ld HL,AB
+		case 0b01011101:
 			return 1;
-		case 0b11000010:					//ld AB,HL
+		//ld AB,HL
+		case 0b11000010:
 			return 1;
 		//ld (&addr),reg
-		case 0b01100000:
-		case 0b01100001:
-		case 0b01100010:
-		case 0b01100011:
+		case 0b01100000 ... 0b01100011:
 			return 3;
 		//ld reg,(&addr)
-		case 0b01100100:
-		case 0b01100101:
-		case 0b01100110:
-		case 0b01100111:
+		case 0b01100100 ... 0b01100111:
 			return 3;
 		//ldi reg,(HL)
-		case 0b01101000:
-		case 0b01101001:
-		case 0b01101010:
-		case 0b01101011:
+		case 0b01101000 ... 0b01101011:
 			return 1;
 		//ldi (HL),reg
-		case 0b01101100:
-		case 0b01101101:
-		case 0b01101110:
-		case 0b01101111:
+		case 0b01101100 ... 0b01101111:
 			return 1;
 		//ldd reg,(HL)
-		case 0b10000100:
-		case 0b10000101:
-		case 0b10000110:
-		case 0b10000111:
+		case 0b10000100 ... 0b10000111:
 			return 1;
 		//ldd (HL),reg
-		case 0b10001000:
-		case 0b10001001:
-		case 0b10001010:
-		case 0b10001011:
+		case 0b10001000 ... 0b10001011:
 			return 1;
 		
 		//video instructions
 		//stv (&addr),reg
-		case 0b10101100:
-		case 0b10101101:
-		case 0b10101110:
-		case 0b10101111:
+		case 0b10101100 ... 0b10101111:
 			return 3;
 		//ldv reg,(&addr)
-		case 0b10110000:
-		case 0b10110001:
-		case 0b10110010:
-		case 0b10110011:
+		case 0b10110000 ... 0b10110011:
 			return 3;
-		case 0b10110100:					//stv (HL),A
-			return 1;
-		case 0b10110101:					//stv (HL+),A
-			return 1;
-		case 0b10110110:					//stv (HL-),A
-			return 1;
-		case 0b10110111:					//ldv A,(HL)
+		
+		//stv (HL),A
+		case 0b10110100:
+		//stv (HL+),A
+		case 0b10110101:
+		//stv (HL-),A
+		case 0b10110110:
+		//ldv A,(HL)
+		case 0b10110111:
 			return 1;
 		//ccv/ccr (HL),(&addr)
-		case 0b10001100:
-		case 0b10001101:
+		case 0b10001100 ... 0b10001101:
 			return 3;
 		//ccv/ccr (HL),(AB)
-		case 0b10001110:
-		case 0b10001111:
+		case 0b10001110 ... 0b10001111:
 			return 1;
 		
 		//ldh
