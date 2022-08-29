@@ -8,9 +8,9 @@ cls:
 		clsLoop1:
 			stv (HL+),A
 			dec C
-			jnz clsLoop1
+			jr nz, clsLoop1
 		dec B
-		jnz clsLoop2
+		jr nz, clsLoop2
 	ret
 
 
@@ -32,13 +32,13 @@ drawPadsAndBall:
 		inc B	; this is stupid
 		dec B	; we check if B is 0 without cmp
 		ballXValueLoop:
-			jz ballXValueLoop_end
+			jr z, ballXValueLoop_end
 
 			ror C	; this sets the carry	; 	while (B--)
 			ror D	; this uses the carry	; 		C = C >> 1
 											; 		D = (D >> 1) + (1 << 7)
 			dec B
-			jp ballXValueLoop
+			jr ballXValueLoop
 		ballXValueLoop_end:
 
 		; C and D will be changed so do this to save them
@@ -52,11 +52,11 @@ drawPadsAndBall:
 		inc B
 		dec B
 		drawballAddrFindLoop:
-			jz drawballAddrFindLoop_end
+			jr z, drawballAddrFindLoop_end
 
 			add A,8
 			dec B
-			jp drawballAddrFindLoop
+			jr drawballAddrFindLoop
 		drawballAddrFindLoop_end:
 		ld B,A
 		ld A,0x1F
@@ -76,7 +76,7 @@ drawPadsAndBall:
 		drawBlacLoop1_ball_left:
 			dec HL
 			dec C
-			jnz normalHLDecLoop1_ball_left
+			jr nz, normalHLDecLoop1_ball_left
 
 			ld C,8	; restart the count
 			sub HL,248
@@ -84,14 +84,14 @@ drawPadsAndBall:
 			normalHLDecLoop1_ball_left:
 			dec D
 			dec B
-			jnz drawBlacLoop1_ball_left
+			jr nz, drawBlacLoop1_ball_left
 			
 		ld B,8
 		ld A,(tempBallAddrStorage_C)
 		drawBallLeftLoop:
 			stv (HL-),A
 			dec C
-			jnz normalHLDecLoop2_ball_left
+			jr nz, normalHLDecLoop2_ball_left
 
 			ld C,8	; restart the count
 			sub HL,248
@@ -99,7 +99,7 @@ drawPadsAndBall:
 			normalHLDecLoop2_ball_left:
 			dec D
 			dec B
-			jnz drawBallLeftLoop
+			jr nz, drawBallLeftLoop
 		
 		; draw right part of the ball
 		drawRightPart:
@@ -114,7 +114,7 @@ drawPadsAndBall:
 		drawBlacLoop1_ball_right:
 			dec HL
 			dec C
-			jnz normalHLDecLoop1_ball_right
+			jr nz, normalHLDecLoop1_ball_right
 
 			ld C,8	; restart the count
 			sub HL,248
@@ -122,14 +122,14 @@ drawPadsAndBall:
 			normalHLDecLoop1_ball_right:
 			dec D
 			dec B
-			jnz drawBlacLoop1_ball_right
+			jr nz, drawBlacLoop1_ball_right
 			
 		ld B,8
 		ld A,(tempBallAddrStorage_D)
 		drawBallRightLoop:
 			stv (HL-),A
 			dec C
-			jnz normalHLDecLoop2_ball_right
+			jr nz, normalHLDecLoop2_ball_right
 
 			ld C,8	; restart the count
 			sub HL,248
@@ -137,7 +137,7 @@ drawPadsAndBall:
 			normalHLDecLoop2_ball_right:
 			dec D
 			dec B
-			jnz drawBallRightLoop
+			jr nz, drawBallRightLoop
 
 	
 	P1DrawPad:
@@ -160,9 +160,9 @@ drawScore:
 	inc B
 	imageCalcLoop_p1:
 		dec B
-		jz endLoopImageCalc_p1
+		jr z, endLoopImageCalc_p1
 		add HL,8
-		jp imageCalcLoop_p1
+		jr imageCalcLoop_p1
 	endLoopImageCalc_p1:
 	ld AB,HL
 	ld HL,P1_SCORE_ADDR
@@ -173,9 +173,9 @@ drawScore:
 	inc B
 	imageCalcLoop_p2:
 		dec B
-		jz endLoopImageCalc_p2
+		jr z, endLoopImageCalc_p2
 		add HL,8
-		jp imageCalcLoop_p2
+		jr imageCalcLoop_p2
 	endLoopImageCalc_p2:
 	ld AB,HL
 	ld HL,P2_SCORE_ADDR
@@ -194,7 +194,7 @@ drawPad:
 	drawBlacLoop1:
 		stv (HL-),A
 		dec C
-		jnz normalHLDecLoop1
+		jr nz, normalHLDecLoop1
 
 		ld C,8	; restart the count
 		sub HL,248
@@ -202,14 +202,14 @@ drawPad:
 		normalHLDecLoop1:
 		dec D
 		dec B
-		jnz drawBlacLoop1
+		jr nz, drawBlacLoop1
 		
 	ld B,PLAYER_HEIGHT
 	ld A,FULL_WHITE
 	drawWhiteLoop1:
 		stv (HL-),A
 		dec C
-		jnz normalHLDecLoop2
+		jr nz, normalHLDecLoop2
 
 		ld C,8	; restart the count
 		sub HL,248
@@ -217,19 +217,19 @@ drawPad:
 		normalHLDecLoop2:
 		dec D
 		dec B
-		jnz drawWhiteLoop1
+		jr nz, drawWhiteLoop1
 
 	ld A,FULL_BLACK
 	drawBlacLoop2:
 		stv (HL-),A
 		dec C
-		jnz normalHLDecLoop3
+		jr nz, normalHLDecLoop3
 
 		ld C,8	; restart the count
 		sub HL,248
 
 		normalHLDecLoop3:
 		dec D
-		jnz drawBlacLoop2
+		jr nz, drawBlacLoop2
 
 	ret

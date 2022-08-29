@@ -1,10 +1,13 @@
+
 saveStates
 .vscode
 
-assembler/assemble.bat
 assembler/*.bin
 
 dependencies
 __*
+
 main
 pong
+main
+main

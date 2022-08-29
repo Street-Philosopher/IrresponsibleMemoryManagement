@@ -33,7 +33,7 @@ movePlayers:
 		ld A,PLAYER_Y_MAX
 		ld B,(p1Position)
 		cmp A,B					; 	if not maxPosition < p1Position
-		jc end_p1TryUp			; 		p1Position += speed
+		jr c, end_p1TryUp			; 		p1Position += speed
 		ld A,B
 		add A,PLAYER_SPEED	; change position and update it
 		ld (p1Position),A
@@ -45,7 +45,7 @@ movePlayers:
 	p1_tryingMoveDown:
 		ld A,(p1Position)
 		cmp A,PLAYER_Y_MIN		; 	if not p1Position < minPosition
-		jc end_p1TryDown		; 		p1Position -= speed
+		jr c, end_p1TryDown		; 		p1Position -= speed
 		sub A,PLAYER_SPEED
 		ld (p1Position),A
 
@@ -57,7 +57,7 @@ movePlayers:
 		ld A,PLAYER_Y_MAX		; 	if p2Position < maxPosition
 		ld B,(p2Position)		; 		p2Position += speed
 		cmp A,B
-		jc end_p2TryUp
+		jr c, end_p2TryUp
 		ld A,B
 		add A,PLAYER_SPEED	; change position and update it
 		ld (p2Position),A
@@ -69,7 +69,7 @@ movePlayers:
 	p2_tryingMoveDown:
 		ld A,(p2Position)
 		cmp A,PLAYER_Y_MIN		; 	if not p2Position < minPosition
-		jc end_p2TryDown		; 		p2Position -= speed
+		jr c, end_p2TryDown		; 		p2Position -= speed
 		sub A,PLAYER_SPEED
 		ld (p2Position),A
 

@@ -100,8 +100,6 @@ db 0b1000_0000
 db 0b1000_0000
 db 0b1000_0000
 db 0
-; space for player number
-db 0,0,0,0,0,0,0,0
 ; space
 db 0,0,0,0,0,0,0,0
 ; w

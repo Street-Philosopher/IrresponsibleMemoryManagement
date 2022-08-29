@@ -3,11 +3,11 @@ div:        ; func div(dividend => A, divisor => B) --> (remainder => A, quotien
 
     divloop:
         cmp A,b
-        jc enddiv	; if A is smaller than B we are done
+        jr c,enddiv	; if A is smaller than B we are done
 
         inc c		; else we're able to sub once more
         sub A,b		; so sub
-        jp divloop	; and repeat
+        jr divloop	; and repeat
 
     enddiv:
     ret

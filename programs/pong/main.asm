@@ -1,11 +1,11 @@
 ; my respect for people who coded entire games in assembly is immeasurable
 
-
+;TODO: add randomness to position and direction of ball, implement some sort of timer
 
 #define PLAYER_HEIGHT as 48
 
 #define PLAYER_Y_MAX as 206
-#define PLAYER_Y_MIN as 16
+#define PLAYER_Y_MIN as 8
 
 #define PLAYER_SPEED as 8			; pixels per cycle
 
@@ -13,8 +13,8 @@
 #define BALL_P2_CONTACT as 232
 #define BALL_Y_MAX as 240
 #define BALL_Y_MIN as  8
-#define SCORED_TO_P1 as  16
-#define SCORED_TO_P2 as 240
+#define SCORED_TO_P1 as  8
+#define SCORED_TO_P2 as 248
 #define BALL_START_YPOS as 124
 #define BALL_RESTART_POS_P1 as 24
 #define BALL_RESTART_POS_P2 as 232
@@ -26,7 +26,7 @@
 #define DIR_TOP_LEFT as 3
 
 #define FULL_BLACK as 0x00
-#define FULL_WHITE as 0xFF
+#define FULL_WHITE as 0xA5
 
 ; values for movement of the pads
 #define SPEED_NO as 0
@@ -61,6 +61,7 @@ init:
 	ld [p2Score], a
 
 
+;TODO: there's a bug that makes it so p2 always scores
 mainloop:
 
 	call movePlayers
@@ -85,7 +86,7 @@ mainloop:
 	call c,player1ScoredRoutine		;		player1ScoredRoutine()
 
 	halt
-	jp mainloop
+	jr mainloop
 
 #include "drawing.asm"
 
@@ -120,4 +121,3 @@ tempBallAddrStorage_C:
 pad
 tempBallAddrStorage_D:
 pad
-
