@@ -154,6 +154,10 @@ int InstructionLength(byte opcode) {
 			return 3;
 		//jp (HL)
 		case 0b01110000 ... 0b01110011:
+			return 1;
+		//jr %imm
+		case 0b11000100 ... 0b11000111:
+			return 2;
 		//call &addr
 		case 0b00001000 ... 0b00001011:
 			return 3;
@@ -392,6 +396,14 @@ string CodeToMnemonic(byte opcode) {
 			return "jc (HL)";
 		case 0b01110011:
 			return "jz (HL)";
+		case 0b11000100:
+			return "jr %";
+		case 0b11000101:
+			return "jr nz,%";
+		case 0b11000110:
+			return "jr c,%";
+		case 0b11000111:
+			return "jr z,%";
 		case 0b00001000:
 			return "call &";
 		case 0b00001001:

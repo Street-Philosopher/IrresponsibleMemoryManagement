@@ -16,9 +16,9 @@ def abort_assembly(msg):
 	print("burp")
 	print(_Fore.RED + "assembly aborted", _Fore.WHITE)
 	exit(-1)
-def errormsg(msg, showline = True):
+def errormsg(msg, customfileinfo = None):
 	fileinfo = getcurrentfileinfo()
-	print(_Fore.RED + "error" + _Fore.WHITE + (f" on line {fileinfo[1]} of file {fileinfo[0]}" if showline is True else "") + ":", msg, "\n")
+	print(_Fore.RED + "error" + _Fore.WHITE + f" on line {fileinfo[1] if customfileinfo is None else customfileinfo[1]} of file {fileinfo[0] if customfileinfo is None else customfileinfo[0]}" + ":", msg, "\n")
 	markasinvalid()
 def warning (msg):
 	fileinfo = getcurrentfileinfo()

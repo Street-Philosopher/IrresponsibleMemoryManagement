@@ -1,5 +1,5 @@
 #from er import er as er
-from common import warning, setcurrentaddr, inc_addr
+from common import warning, setcurrentaddr, inc_addr, getcurrentfileinfo
 
 #TODO:
 #   change checking functions very similar to each other to be a single one
@@ -106,6 +106,7 @@ opcodestable = {
 	"halt"		: 0b0000_0010,
 	"jp"		: 0b0000_0100,
 	"call"		: 0b0000_1000,
+	"jr"		: 0b1100_0100,
 	"ret"		: 0b0000_1100,
 	"push"		: 0b0001_1000,
 	"pop" 		: 0b0001_1010,
@@ -157,7 +158,7 @@ def CheckConditional(cond):
 	elif cond == "z":
 		return 3
 	else:
-		raise ParamError("invalid conditional '" + cond + "'")
+		raise ParamError("invalid condition '" + cond + "'")
 #END
 
 
@@ -187,7 +188,7 @@ def jp(param):
 		cond = CheckConditional(param[0].upper())
 		addr = param[1].upper()
 	else:
-		raise ParamError("invalid parameter number for jp")
+		raise ParamError("invalid number of parameters for jp")
 
 	if addr == "(HL)":
 		return [opcodestable["jp"] + 0b0110_1100 + cond]	#we add the condition as offset
@@ -201,7 +202,7 @@ def jp(param):
 	except:
 		#the signal that this is to be added to the label waiting list is the name of the label
 		#labels are case insensitive because i said so
-		return [ (opcodestable["jp"] + cond), addr.lower(), None ]
+		return [ (opcodestable["jp"] + cond), (addr.lower(), getcurrentfileinfo()), None ]
 def jnz(param):
 	if len(param) != 1:
 		raise ParamError("expected one parameter for jnz")
@@ -229,7 +230,7 @@ def call(param):
 		cond = CheckConditional(param[0].upper())
 		addr = param[1].upper()
 	else:
-		raise ParamError("invalid parameter number for call")
+		raise ParamError("invalid number of parameters for call")
 
 	if addr == "(HL)":
 		return [opcodestable["call"] + 0b0001_0100 + cond]	#we add the condition as offset
@@ -243,7 +244,7 @@ def call(param):
 	except:
 		#the signal that this is to be added to the label waiting list is the name of the label
 		#labels are case insensitive because i said so
-		return [ (opcodestable["call"] + cond), addr.lower(), None ]
+		return [ (opcodestable["call"] + cond), (addr.lower(), getcurrentfileinfo()), None ]
 def cnz(param):
 	if len(param) != 1:
 		raise ParamError("expected one parameter for cnz")
@@ -262,6 +263,27 @@ def callz(param):
 		
 	params = ["z"] + param
 	return call(params)
+
+def jr(params):
+	if len(params) == 1:	#no conditionals
+		cond = 0
+		addr = params[0].upper()
+	elif len(params) == 2:	#there's a conditional
+		cond = CheckConditional(params[0].upper())
+		addr = params[1].upper()
+	else:
+		raise ParamError("invalid number of parameters for jr")
+
+	try:
+		val = int(addr, 0)
+		if val != val & 0xFF:
+			val &= 0xFF
+			warning("address too large, changed to " + str(val))
+		return [(opcodestable["jr"] + cond), val ]
+	except:
+		#the signal that this is to be added to the label waiting list is the name of the label
+		#labels are case insensitive because i said so
+		return [ (opcodestable["jr"] + cond), (addr.lower(), getcurrentfileinfo()) ]
 
 def ret(param):
 	if len(param) == 0:	#unconditional
@@ -337,7 +359,7 @@ def add(params):
 					warning("value can't fit in a word, will be changed to " + str(val))
 				return [ 0b11000000, val % 0x100, val // 0x100 ]
 			except:
-				return [ 0b11000000, params[1].lower(), None ]
+				return [ 0b11000000, (params[1].lower(), getcurrentfileinfo()), None ]
 
 	raise ParamError("first parameter for add should be either A or HL")
 def adc(params):
@@ -377,7 +399,7 @@ def sub(params):
 				warning("address too large, changed to " + str(val))
 			return [(opcodestable["sub"] + 0b10011101), val % 0x100, val // 0x100]
 		except:
-			return  [(opcodestable["sub"] + 0b10011101), param.lower(), None ]
+			return  [(opcodestable["sub"] + 0b10011101), (param.lower(), getcurrentfileinfo()), None ]
 	else:
 		raise ParamError("first parameter for sub should be A or HL")
 
@@ -644,7 +666,7 @@ def ld(params):
 			except:
 				return [
 					ldc + regs.index(param1) + 0b100100,
-					param2.lower(),
+					(param2.lower(), getcurrentfileinfo()),
 					None
 				]
 
@@ -684,7 +706,7 @@ def ld(params):
 			val = GetBytesFromImmediate(params[1], maxbytes=2)
 			return [ ldc + 0b011100 ] + val
 		except:
-			return [ (ldc + 0b011100), param2.lower(), None ]
+			return [ (ldc + 0b011100), (param2.lower(), getcurrentfileinfo()), None ]
 	if param1 == "AB":
 		if param2 == "HL":
 			return [ 0b11000010 ]
@@ -718,7 +740,7 @@ def ld(params):
 			#we try to see if it's a label
 			return [
 				ldc + 0b100000 + regs.index(param2),
-				param1.lower(),
+				(param1.lower(), getcurrentfileinfo()),
 				None
 			]
 	
@@ -797,7 +819,7 @@ def stv(params):
 	except:
 		return [
 			opcodestable["stv"] + regs.index(params[1].upper()),
-			params[0].lower(),
+			(params[0].lower(), getcurrentfileinfo()),
 			None
 		]
 
@@ -831,7 +853,7 @@ def ldv(parmas):
 	except:
 		return [
 			opcodestable["ldv"] + regs.index(parmas[0].upper()),
-			parmas[1].lower(),
+			(parmas[1].lower(), getcurrentfileinfo()),
 			None
 		]
 
@@ -865,7 +887,7 @@ def ccv(params):
 		#label
 		return [
 			opcodestable["ccv"],
-			params[1].lower(),
+			(params[1].lower(), getcurrentfileinfo()),
 			None
 		]
 def ccr(params):
@@ -897,7 +919,7 @@ def ccr(params):
 		#label
 		return [
 			opcodestable["ccr"],
-			params[1].lower(),
+			(params[1].lower(), getcurrentfileinfo()),
 			None
 		]
 
@@ -950,7 +972,7 @@ def db(params):
 		except Exception as e:
 			print(e)
 			#labels
-			Bytes.append(param)
+			Bytes.append( (param, getcurrentfileinfo()) )
 			Bytes.append(None)
 	return Bytes
 
@@ -1049,6 +1071,7 @@ checkertable = {
 	"jnz"		: jnz,
 	"jc"		: jc,
 	"jz"		: jz,
+	"jr"		: jr,
 	"call"		: call,
 	"cnz"		: cnz,
 	"callc"		: callc,

@@ -116,4 +116,4 @@ while current_arg < len(args):
 if OUT_FILENAME == -1:
 	OUT_FILENAME = Path(PATH).stem + (".bin" if OUT_MODE == "bin" else ".c")
 
-if QUIET is False: print("assembling into", OUT_FILENAME)
+if QUIET is False: print("assembling into '" + OUT_FILENAME + "'")

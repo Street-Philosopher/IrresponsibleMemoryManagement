@@ -1,0 +1,1 @@
+python3 assembler/assembler.py programs/pong/main.asm -np -o pong

@@ -45,12 +45,7 @@ int main(int argc, char* argv[]) {
 
 	//initialises debug screen
 	DebugInit(&CPU);
-	//depending on whether we have graphics in our program or not we activate or deactivate debug by default
-	#ifdef GRAPHICS
 	Debugger::SetActive(false);
-	#else
-	Debugger::SetActive(true);
-	#endif
 
 	mainloop();
 
@@ -151,10 +146,13 @@ void pop(uint16_t* reg) {
 // 	CPU.SetFlag(0, (*reg) == 0);
 // }
 
-void jp(uint16_t addr) {
+void jp(word addr) {
 	PC = addr;
 }
-void call(uint16_t addr) {
+void jr(byte relativeAddr) {
+	PC += (sbyte)relativeAddr;
+}
+void call(word addr) {
 	push(PC);
 	PC = addr;
 
@@ -372,6 +370,22 @@ void ldv(byte* reg, word addr) {
 #undef SP
 #undef PC
 
+
+bool CheckConditionalFromOpcode(byte opcode) {
+	switch (opcode & 0b11) {
+		case 0:		//unconditional
+			return true;
+		case 1:		//not zero
+			return !CPU.GetFlag(0);
+		case 2:		//jc
+			return CPU.GetFlag(1);
+			break;
+		case 3:		//jz
+			return CPU.GetFlag(0);
+	}
+}
+
+
 byte b1, b2;
 word w1;		//variables used in some operations. here so compiler won't complain
 void CPU_T::exec(byte opcode) {
@@ -414,37 +428,19 @@ void CPU_T::exec(byte opcode) {
 				w1 = b1 + (0x100 * b2);
 				//read the two following bytes for address
 
-				switch (opcode & 0b11) {
-					case 0:		//unconditional
-						jp(w1);
-						break;
-					case 1:		//jnz
-						if (!GetFlag(0)) jp(w1);
-						break;
-					case 2:		//jc
-						if (GetFlag(1)) jp(w1);
-						break;
-					case 3:		//jz
-						if (GetFlag(0)) jp(w1);
-						break;
-				}
+				if (CheckConditionalFromOpcode(opcode) == true)
+					jp(w1);
 				break;
 			//jp (HL)
 			case 0b01110000 ... 0b01110011:
-				switch (opcode & 0b11) {
-					case 0:
-						jp(HL);
-						break;
-					case 1:
-						if (!GetFlag(0)) jp(HL);
-						break;
-					case 2:
-						if (GetFlag(1)) jp(HL);
-						break;
-					case 3:
-						if (GetFlag(0)) jp(HL);
-						break;
-				}
+				if (CheckConditionalFromOpcode(opcode) == true)
+					jp(HL);
+				break;
+			//jr %imm8
+			case 0b11000100 ... 0b11000111:
+				b1 = ReadNext();
+				if (CheckConditionalFromOpcode(opcode) == true)
+					jr(b1);
 				break;
 			//call &imm16
 			case 0b00001000 ... 0b00001011:
@@ -452,54 +448,18 @@ void CPU_T::exec(byte opcode) {
 				b2 = ReadNext();    //read two bytes of params
 				w1 = b1 + (0x100 * b2);
 
-				switch (opcode & 0b11) {
-					case 0:
-						call(w1);
-						break;
-					case 1:
-						if (!GetFlag(0)) call(w1);
-						break;
-					case 2:
-						if (GetFlag(1)) call(w1);
-						break;
-					case 3:
-						if (GetFlag(9)) call(w1);
-						break;
-				}
+				if (CheckConditionalFromOpcode(opcode) == true)
+					call(w1);
 				break;
 			//call (HL)
 			case 0b00011100 ... 0b00011111:
-				switch (opcode & 0b11) {
-					case 0:				//unconditional
-						call(HL);
-						break;
-					case 1:				//callnz
-						if (!GetFlag(0)) call(HL);
-						break;
-					case 2:				//callc
-						if (GetFlag(1)) call(HL);
-						break;
-					case 3:				//callz
-						if (GetFlag(0)) call(HL);
-						break;
-				}
+				if (CheckConditionalFromOpcode(opcode) == true)
+					call(HL);
 				break;
 			//ret
 			case 0b00001100 ... 0b00001111:
-				switch (opcode & 0b11) {
-					case 0:				//unconditional ret
-						ret();
-						break;
-					case 1:				//retnz
-						if (!GetFlag(0)) ret();
-						break;
-					case 2:				//retc
-						if (GetFlag(1)) ret();
-						break;
-					case 3:				//retz
-						if (GetFlag(0)) ret();
-						break;
-				}
+				if (CheckConditionalFromOpcode(opcode) == true)
+					ret();
 				break;
 			case 0b00011000:					//push HL
 				push(HL);

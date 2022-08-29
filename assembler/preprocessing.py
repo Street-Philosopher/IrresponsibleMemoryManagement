@@ -1,5 +1,5 @@
 import os
-from common import CustomSplit, INTERNAL_COMMAND_PREFIX, errormsg, warning, abort_assembly, AddTempFile
+from common import CustomSplit, INTERNAL_COMMAND_PREFIX, errormsg, print_if_allowed, warning, abort_assembly, AddTempFile
 from sys import argv as args
 
 macros = {}
@@ -42,10 +42,16 @@ def Preprocess(file_path):		#TODO: check for label definition here
 					continue
 				elif line[1:8] == "include":
 					try:
+
 						#find the path, absolute or relative. if only a filename is given it's assumed to be in the directory of the main file
 						included_file_name = line[10:-1]
 						if not os.path.isabs(included_file_name):
 							full_file_name = os.path.dirname(os.path.abspath(args[1])) + "/" + included_file_name
+						else:
+							full_file_name = included_file_name
+							included_file_name = os.path.basename(included_file_name)
+
+						print_if_allowed("including file '" + included_file_name + "'")
 						
 						#append the contents together with a command stating the beginning and end of an included file has occurred
 						newlines.append(f"{INTERNAL_COMMAND_PREFIX}FILE {included_file_name}")

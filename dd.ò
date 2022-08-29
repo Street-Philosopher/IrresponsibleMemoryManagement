@@ -58,6 +58,7 @@ instructions:
 00000010 => halt
 000001xx => jp   [condition] &imm
 011100xx => jp   [condition] (HL)
+110001xx => jr   [condition] %imm
 000010xx => call [condition] &imm
 000111xx => call [condition] (HL)
 000011xx => ret  [condition]
@@ -141,7 +142,8 @@ instructions:
 01001010
 01001111
 1011100x
-11000011+
+11000011
+11001000
 
 
 

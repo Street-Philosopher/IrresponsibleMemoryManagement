@@ -8,6 +8,7 @@
 
 typedef unsigned short word;
 typedef std::uint8_t byte;
+typedef char sbyte;
 //typedef byte* pt;
 
 /*

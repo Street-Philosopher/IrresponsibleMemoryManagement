@@ -126,15 +126,33 @@ try:
 		if allbytes[i] is None:	#it woiuld be bc we foudn an undefined symbol. we don't want to do anything
 			continue
 
+		#it's a tuple of the form (labelname, fileinfo)
+		labelname = allbytes[i][0]
+		labelinfo = allbytes[i][1]
+
 		#if not a number, check if it is a valid label
-		if allbytes[i] not in labels:
-			errormsg(f"undefined symbol: '{allbytes[i]}'", False)
+		if labelname not in labels:
+			errormsg(f"undefined symbol: '{labelname}'", labelinfo)
 			continue
 
-		#if there is a label for that
-		addr = labels[allbytes[i]]
-		allbytes[i]     = addr  % 0x100	#convert label to address and change bytes
-		allbytes[i + 1] = addr // 0x100
+		#two bytes for the address
+		if allbytes[i+1] == None:
+			addr = labels[labelname]
+			allbytes[i]     = addr  % 0x100	#convert label to address and change bytes
+			allbytes[i + 1] = addr // 0x100
+		else:	#only used by jr
+			addr = labels[labelname] - i - 1
+			if not 127 >= addr >= -128:
+				errormsg(f"the symbol '{labelname}' is out of the scope of the jr instruction", labelinfo)
+				continue
+			
+			#turn into a signed byte
+			addr &= 0xFF
+			if addr < 0:
+				addr = (~addr)
+				addr += 1
+				
+			allbytes[i] = addr
 	#END LABEL FOR
 
 	if isvalid() is True:

@@ -9,10 +9,10 @@
 
 #define PLAYER_SPEED as 8			; pixels per cycle
 
-#define BALL_P1_CONTACT as  24
+#define BALL_P1_CONTACT as  16
 #define BALL_P2_CONTACT as 232
 #define BALL_Y_MAX as 240
-#define BALL_Y_MIN as  16
+#define BALL_Y_MIN as  8
 #define SCORED_TO_P1 as  16
 #define SCORED_TO_P2 as 240
 #define BALL_START_YPOS as 124
@@ -48,26 +48,17 @@
 init:
 	; bad and can be optimised easily but who cares, it's more readable
 	ld a,  BALL_RESTART_POS_P1
-	ld hl, ballXPos
-	ld [hl], a
+	ld [ballXPos], a
 	ld a,  BALL_START_YPOS
-	ld hl, ballYPos
-	ld [hl], a
+	ld [ballYPos], a
 	ld a,  DIR_TOP_RIGHT
-	ld hl, ballDir
-	ld [hl], a
+	ld [ballDir], a
 	ld a,  112
-	ld hl, p1Position
-	ld [hl], a
-	ld a,  112
-	ld hl, p2Position
-	ld [hl], a
+	ld [p1Position], a
+	ld [p2Position], a
 	ld a,  0
-	ld hl, p1Score
-	ld [hl], a
-	ld a,  0
-	ld hl, p2Score
-	ld [hl], a
+	ld [p1Score], a
+	ld [p2Score], a
 
 
 mainloop:

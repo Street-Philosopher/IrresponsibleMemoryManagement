@@ -6,3 +6,5 @@ assembler/*.bin
 
 dependencies
 __*
+main
+pong
