@@ -1,5 +1,6 @@
 #include "debugger.h"
 #include "util.h"
+#include "cramConstants.h"
 //#include "types.h"
 
 #include <list>
@@ -27,12 +28,15 @@ list<memorybuffer> mb, vmb, cmb;
 //writes to memory all buffered changes
 void CPU_T::ApplyWriteBuffer() {
 
-	//write to the address of the buffer, the given value
+	//write to the address of the buffer the given value
 	foreach(i, mb) {
 		base[i.address] = i.value;
 	}
 	foreach(i, vmb) {
 		vramBase[i.address] = i.value;
+	}
+	foreach(i, cmb) {
+		cramBase[i.address & 0xFF] = i.value;
 	}
 
 	//clear as we're done
@@ -41,6 +45,7 @@ void CPU_T::ApplyWriteBuffer() {
 void CPU_T::ClearWriteBuffer() {
 	mb.clear();
 	vmb.clear();
+	cmb.clear();
 }
 
 
@@ -79,9 +84,12 @@ void CPU_T::init() {
 	PC = 0x0000;
 
 	//ADD_CRAM: set initial cram values
-	// cycle counter (for display)
-	cramBase[0xF0] = 0;
-	cramBase[0xF1] = 0;
+	// cycle counter
+	cramBase[CLOCK_COUNTER_LOW]  = 0;
+	cramBase[CLOCK_COUNTER_HIGH] = 0;
+
+	//exception handling mode
+	cramBase[EXCEPTION_MODE_REGISTER] = EXCEPTION_MODE_HALT;
 
 /*
 	//not necessary, but having all set to zero is boring
@@ -146,9 +154,9 @@ byte CPU_T::ReadVRAM(word address) {
 }
 void CPU_T::WriteCRAM(byte address, byte value) {
 
-	if (!Debugger::IsActive() && IsBreakpointCRAM(address, write)) {
-		throw BreakpointException();
-	}
+	// if (!Debugger::IsActive() && IsBreakpointCRAM(address, write)) {
+	// 	throw BreakpointException();
+	// }
 
 	//same as for normal read, but in a separate buffer
 	memorybuffer temp;
@@ -158,9 +166,9 @@ void CPU_T::WriteCRAM(byte address, byte value) {
 }
 byte CPU_T::ReadCRAM(byte address) {
 
-	if (!Debugger::IsActive() && IsBreakpointCRAM(address, read)) {
-		throw BreakpointException();
-	}
+	// if (!Debugger::IsActive() && IsBreakpointCRAM(address, read)) {
+	// 	throw BreakpointException();
+	// }
 	
 	return cramBase[address];
 }

@@ -34,7 +34,6 @@ display:
 256x256
 64kB VRAM
 0x0000-0x2000: screen data (one bit per pixel, with gb-like "squares")
-0xFF00-0xFFFF: screen settings
 updated every 65536 clock cycles
 # TODO: turn the display to sprite-based, maybe colours but idk
 
@@ -44,10 +43,25 @@ cram:
 accessed using ldh instruction
 256 bytes
 //			00: rom bank / ram bank (4bit each)
+10: exception handle mode
+11: \__ exception handler address (little endian)
+12: /
 80: input (one bit per key)
 F0: cycle counter (low)		\__ when this reaches 0000 the screen updates
 F1: cycle coutner (high)	/
 
+
+exceptions:
+errors caused by:
+    + invalid opcode
+when one occurs, it is handled depending on the value of the exception handle mode register in CRAM (addr 0x10):
+    + halt (0x01, the default) will stop the CPU
+    + ignore (0x00) will skip the exception as if it didn't occur
+    + handle (0x02) will perform some operations before jumping to the address in the exception handler register (0x11-0x12)
+the handler will (in order):
+    + set the exception mode to halt, so the user will have to reset it before jumping back
+    + push the program counter (PC) to the stack
+    + jump to the address (it is NOT a call. you can't just use RET)
 
 
 #ADD_OPCODE:
@@ -134,7 +148,7 @@ instructions:
 00010110 => ldh (%imm),A
 00010111 => ldh A,(%imm)
 
-#unused (69)
+#unused (65)
 00000011
 00010000
 01000000
@@ -143,14 +157,13 @@ instructions:
 01001111
 1011100x
 11000011
-11001000
+11001000+
 
 
 
 todo:
 more flags
 inc immediate
-jr
 more operations on hl
 other cram settings
 ldv A,(HL+/-)

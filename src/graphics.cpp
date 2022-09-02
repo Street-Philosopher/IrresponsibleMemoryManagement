@@ -87,7 +87,7 @@ bool G_GetBit(int value, int num) {
 }
 
 void GetEvents() {
-	sf::Event event;	//why tf is this highlighted
+	sf::Event event;
     while (window.pollEvent(event))
     {
 		//apparently windows aren't closed automatically
@@ -156,7 +156,7 @@ void DrawSprites(byte vramBase[]) {
 }
 
 //one update cycle takes +- 25ms		// you wish lmao
-void updatescreen(CPU_T* cpu) {	//why tf is "cpu" highlighted
+void updatescreen(CPU_T* cpu) {
 
 	window.clear(Colour::Black);
 
@@ -164,14 +164,14 @@ void updatescreen(CPU_T* cpu) {	//why tf is "cpu" highlighted
 
 	//black magic
 	cpu->cramBase[INPUT_REGISTER] =
-		Keyboard::isKeyPressed(Keyboard::Right) * 0b00000001 +
-		Keyboard::isKeyPressed(Keyboard::Left)  * 0b00000010 +
-		Keyboard::isKeyPressed(Keyboard::Up)    * 0b00000100 +
-		Keyboard::isKeyPressed(Keyboard::Down)  * 0b00001000 +
-		Keyboard::isKeyPressed(Keyboard::Z)     * 0b00010000 +
-		Keyboard::isKeyPressed(Keyboard::X)     * 0b00100000 +
-		Keyboard::isKeyPressed(Keyboard::A)     * 0b01000000 +
-		Keyboard::isKeyPressed(Keyboard::S)     * 0b10000000;
+		(Keyboard::isKeyPressed(Keyboard::Right) << 0) +
+		(Keyboard::isKeyPressed(Keyboard::Left)  << 1) +
+		(Keyboard::isKeyPressed(Keyboard::Up)    << 2) +
+		(Keyboard::isKeyPressed(Keyboard::Down)  << 3) +
+		(Keyboard::isKeyPressed(Keyboard::Z)     << 4) +
+		(Keyboard::isKeyPressed(Keyboard::X)     << 5) +
+		(Keyboard::isKeyPressed(Keyboard::A)     << 6) +
+		(Keyboard::isKeyPressed(Keyboard::S)     << 7);
 
 	DrawSprites(cpu->vramBase);
 

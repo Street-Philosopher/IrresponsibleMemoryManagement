@@ -82,6 +82,7 @@ debugger_func(cmd_load);
 debugger_func(cmd_update);
 debugger_func(cmd_cls);
 debugger_func(cmd_run);
+debugger_func(cmd_shell);
 
 //prints a space between the previous command and the next
 #define help_msg_separator {"\n", nullptr, "", "", ""},
@@ -91,6 +92,7 @@ debugger_command_t commands[] = {
 	{"help", cmd_help, "list all commands, or describe a specific one", "", "[command]"},
 	{"quit", cmd_quit, "exit the emulator", "", "/ exit"},
 	{"exit", cmd_quit, "", "", ""},
+	{"shell", cmd_shell, "execute a command in the host shell", "", "[command]"},
 	help_msg_separator
 
 	{"cc", cmd_cc, "print the value of the clock counter or reset it", "print the value of the clock counter. adding \"reset\" will also reset it to zero", "[reset]"},
@@ -1173,3 +1175,22 @@ debugger_func(cmd_cls) {
 
 //it's all managed in the return thing
 debugger_func(cmd_run) { return crt_continue_execution; }
+
+debugger_func(cmd_shell) {
+
+	std::string cmd;
+	bool i = false;	//the first param is just the command, so skip that
+	foreach (param, params) {
+		if (i) {
+			cmd += param + " ";
+		} else {
+			i = true;
+		}
+	}
+
+	int res = system(cmd.c_str());
+
+	if (res != 0) cout << "could not complete the operation";
+
+	return crt_none;
+}

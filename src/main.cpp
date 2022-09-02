@@ -103,6 +103,20 @@ byte* GetRegPtr(int n) {
 		default: return 0;
 	}
 }
+bool CheckConditionalFromOpcode(byte opcode) {
+	switch (opcode & 0b11) {
+		case 0b00:		//unconditional
+			return true;
+		case 0b01:		//not zero
+			return !CPU.GetFlag(0);
+		case 0b10:		//carry
+			return CPU.GetFlag(1);
+			break;
+		case 0b11:		//zeri
+			return CPU.GetFlag(0);
+		default: return false;	//the compiler complains otherwise
+	}
+}
 
 bool GetBit(int value, int bitNumber) {
 	return value & (1 << bitNumber);
@@ -112,13 +126,6 @@ bool GetBit(int value, int bitNumber) {
 //REGION opcodes
 //syscodes
 void nop () {  }
-void stop() {
-
-	PC--;	//when we execute this the PC has already been incremented. do this
-
-	//it's not just a "while true" because this way it works with the debugger
-	while (CPU.ReadMemory(PC) == 1) printdebug(&CPU);
-}
 
 void push(uint16_t reg) {
 	//push the two 8b components
@@ -165,11 +172,6 @@ void ret() {
 
 	//we return from a function, so we're one level less deep
 	Debugger::DecCallDepth();
-}
-
-//genius, i know
-void InvalidCode(int opcode = 0) {
-	asm("ud2");
 }
 
 
@@ -371,17 +373,26 @@ void ldv(byte* reg, word addr) {
 #undef PC
 
 
-bool CheckConditionalFromOpcode(byte opcode) {
-	switch (opcode & 0b11) {
-		case 0:		//unconditional
-			return true;
-		case 1:		//not zero
-			return !CPU.GetFlag(0);
-		case 2:		//jc
-			return CPU.GetFlag(1);
+void CPU_T::ExceptionHandler() {
+
+	switch (cramBase[EXCEPTION_MODE_REGISTER]) {
+		case EXCEPTION_MODE_IGNORE:
 			break;
-		case 3:		//jz
-			return CPU.GetFlag(0);
+		case EXCEPTION_MODE_HANDLE:
+			//deactivate the exception handler. to avoid recursive exceptions
+			cramBase[EXCEPTION_MODE_REGISTER] = EXCEPTION_MODE_HALT;
+
+			//push some information about the CPU
+			push(PC);
+
+			//we jump to the exception handler
+			int addr;
+			addr = (cramBase[EXC_HANDLE_HIGH] << 8) + cramBase[EXC_HANDLE_LOW];
+			jp(addr);
+			break;
+		default:
+		case EXCEPTION_MODE_HALT:
+			throw BreakpointException();
 	}
 }
 
@@ -413,7 +424,7 @@ void CPU_T::exec(byte opcode) {
 				nop();
 				break;
 			case 0b00000001:					//stop
-				stop();
+				throw BreakpointException();	//will open the debugger
 				break;
 			case 0b00000010:					//halt
 				//does nothing until you update the screen
@@ -814,7 +825,7 @@ void CPU_T::exec(byte opcode) {
 			//ldh
 			case 0b00010110:					//ldh (%addr),A
 				b1 = ReadNext();
-				WriteCRAM(cramBase[b1], A);
+				WriteCRAM(b1, A);
 				break;
 			case 0b00010111:					//ldh A,(%addr)
 				b1 = ReadNext();
@@ -824,7 +835,7 @@ void CPU_T::exec(byte opcode) {
 			
 			//bad
 			default:
-				InvalidCode(opcode);
+				ExceptionHandler();
 				break;
 		}
 

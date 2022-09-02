@@ -66,6 +66,8 @@ class CPU_T {
 	void WriteCRAM(byte address, byte value);
 	byte ReadCRAM (byte address);
 
+	void ExceptionHandler();
+
 	bool GetFlag(int num);
 	void SetFlag(int num, bool value);
 
