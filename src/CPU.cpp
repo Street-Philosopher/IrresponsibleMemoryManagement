@@ -36,7 +36,7 @@ void CPU_T::ApplyWriteBuffer() {
 		vramBase[i.address] = i.value;
 	}
 	foreach(i, cmb) {
-		cramBase[i.address & 0xFF] = i.value;
+		cramBase[i.address] = i.value;
 	}
 
 	//clear as we're done
@@ -61,22 +61,11 @@ void CPU_T::SetFlag(int num, bool value) {
 
 //constructor
 CPU_T::CPU_T() {
-
-/*
-	base = (pt)malloc(0x10000);
-	vramBase = (pt)malloc(0x10000);
-	cramBase = (pt)malloc(0x100);
-*/
 	
 	init();
 }
 CPU_T::~CPU_T() {
-/*
-	//no, this doesn't cause a memory leak
-	free(base);
-	free(vramBase);
-	free(cramBase);
-*/
+
 }
 void CPU_T::init() {
 
@@ -89,14 +78,7 @@ void CPU_T::init() {
 	cramBase[CLOCK_COUNTER_HIGH] = 0;
 
 	//exception handling mode
-	cramBase[EXCEPTION_MODE_REGISTER] = EXCEPTION_MODE_HALT;
-
-/*
-	//not necessary, but having all set to zero is boring
-	RandomiseMemory(base, 0x10000);
-	RandomiseMemory(vramBase, 0x10000);
-	RandomiseMemory(cramBase, 0x100);
-*/
+	cramBase[EXCEPTION_MODE_REGISTER] = EXCEPTION_MODE_STOP;
 
 	A  = rand() % 256;
 	B  = rand() % 256;

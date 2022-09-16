@@ -5,7 +5,7 @@ from sys import argv as args
 macros = {}
 
 #gotta love indentation
-def Preprocess(file_path):		#TODO: check for label definition here
+def Preprocess(file_path):
 	global macros
 
 	try:

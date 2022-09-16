@@ -3,7 +3,8 @@
 
 #compile
 echo compiling...
-clang++ -std=c++17 -LSFML-2.5.1/lib -lsfml-graphics -lsfml-window -lsfml-system src/*.cpp -o main -ISFML-2.5.1/include
+# x86_64-w64-mingw32-g++
+clang++ -std=c++17 -LSFML-2.5.1/lib -lsfml-graphics -lsfml-window -lsfml-system src/*.cpp -o main -Ofast -ISFML-2.5.1/include
 
 echo doing the thing...
 #of course i know what these lines do, what do you mean

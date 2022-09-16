@@ -90,9 +90,8 @@ void GetEvents() {
 	sf::Event event;
     while (window.pollEvent(event))
     {
-		//apparently windows aren't closed automatically
         if (event.type == sf::Event::Closed) {
-			window.close();
+			exit(0);
 		}
     }
 }

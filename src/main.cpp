@@ -63,6 +63,7 @@ void mainloop() {
 	byte opcode;
 
 	while(true) {
+		
 		if (CheckForDebugKey()) Debugger::SetActive(true);
 
 		//debug is done before, so if we hit a breakpoint we show the instruction before it's executed
@@ -380,7 +381,7 @@ void CPU_T::ExceptionHandler() {
 			break;
 		case EXCEPTION_MODE_HANDLE:
 			//deactivate the exception handler. to avoid recursive exceptions
-			cramBase[EXCEPTION_MODE_REGISTER] = EXCEPTION_MODE_HALT;
+			cramBase[EXCEPTION_MODE_REGISTER] = EXCEPTION_MODE_STOP;
 
 			//push some information about the CPU
 			push(PC);
@@ -391,7 +392,7 @@ void CPU_T::ExceptionHandler() {
 			jp(addr);
 			break;
 		default:
-		case EXCEPTION_MODE_HALT:
+		case EXCEPTION_MODE_STOP:
 			throw BreakpointException();
 	}
 }

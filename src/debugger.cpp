@@ -5,7 +5,7 @@
 #define _SILENCE_EXPERIMENTAL_FILESYSTEM_DEPRECATION_WARNING
 #define _CRT_SECURE_NO_WARNINGS
 
-#include <filesystem>		//to check/create directories
+// #include <filesystem>		//to check/create directories
 #include <sstream>
 #include <list>
 
@@ -85,7 +85,7 @@ debugger_func(cmd_run);
 debugger_func(cmd_shell);
 
 //prints a space between the previous command and the next
-#define help_msg_separator {"\n", nullptr, "", "", ""},
+#define help_msg_separator {"\n", nullptr, "", "", ""}
 //all commands
 debugger_command_t commands[] = {
 
@@ -93,10 +93,10 @@ debugger_command_t commands[] = {
 	{"quit", cmd_quit, "exit the emulator", "", "/ exit"},
 	{"exit", cmd_quit, "", "", ""},
 	{"shell", cmd_shell, "execute a command in the host shell", "", "[command]"},
-	help_msg_separator
+	help_msg_separator,
 
 	{"cc", cmd_cc, "print the value of the clock counter or reset it", "print the value of the clock counter. adding \"reset\" will also reset it to zero", "[reset]"},
-	help_msg_separator
+	help_msg_separator,
 
 	{"step", cmd_step, "step to the next instruction, going into function calls", "", "/ s"},
 	{"s", cmd_step, "", ""},
@@ -104,49 +104,44 @@ debugger_command_t commands[] = {
 	{"n", cmd_next, "", ""},
 	{"finish", cmd_finish, "run until the end of the function", "", "/ f"},
 	{"f", cmd_finish, "", ""},
-	help_msg_separator
+	help_msg_separator,
 
 	{"m", cmd_memview, "print the memory value at ADDR", "print the value of the memory at the given ADDRess. specifying 'r', 'v' or 'c' as parameters will select which memory to look at (RAM, VRAM or CRAM)", "[r/v/c] ADDR"},
-	{"m", cmd_memview, "print the memory values from ADDR1 to ADDR2", "print all the values in the given memory interval. specifying 'r', 'v' or 'c' as parameters will select which memory to look at (RAM, VRAM or CRAM)", "[r/v/c] ADDR"},
-	help_msg_separator
+	{"m", cmd_memview, "print the memory values from ADDR1 to ADDR2", "print all the values in the given memory interval. specifying 'r', 'v' or 'c' as parameters will select which memory to look at (RAM, VRAM or CRAM)", "[r/v/c] ADD1-ADD2"},
+	help_msg_separator,
 
 	{"dis", cmd_disassembly, "disassembles the byte at the given ADDRess" },
-	help_msg_separator
+	help_msg_separator,
 
 	{"w", cmd_memwrite, "write VAL to ADDR", "write the given VALue to the specified ADDRess. you can specify 'r', 'v' or 'c' to write to RAM, VRAM or Cram", "[r/v/c] ADDR VAL"},
-	help_msg_separator
+	help_msg_separator,
 
 	{"reg", cmd_reg_write, "load VAL in the given register", "load the given VALue in any of the REGisters. the registers are:\ngeneral purpose, 8bit:\n\tA, B, C, D, H, L\ngeneral purpose, 16bit:\n\tHL\nSP (stack pointer, 8bit)\nF  (flags, 8bit)", "NAME VAL"},
 	{"jp", cmd_jump, "set the Program Counter to the given ADDRess", "", "ADDR"},
-	help_msg_separator
+	help_msg_separator,
 
 	{"break" , cmd_breakpoint, "add a breakpoint at the given ADDRess", "add a breakpoint at the given ADDRess.\nyou can specify a breakpoint mode:\n\t-e: the default mode, will trigger on execution\n\t-w: will trigger on write\n\t-r: will trigger on read\n\nyou can also specify 'r', 'v' or 'c' to add the breakpoint in RAM, VRAM or CRAM", "[r/v/c] [mode] ADDR"},
 	{"remove", cmd_breakpoint_delete, "remove the breakpoint at the specified ADDRess", "remove all breakpoints at the specified ADDRess, or specify a mode to remove only those.\nyou can specify 'r' if it's in RAM (default), 'v' if the breakpoint is in VRAM or 'c' if it's in CRAM.\nwriting 'all' in place of the address will remove all breakpoints, at all addresses", "[r/v/c] [mode] ADDR"},
 	{"list",   cmd_breakpoint_list, "list all existing breakpoints", "shows a list of all existing breakpoints", ""},
-	help_msg_separator
+	help_msg_separator,
 
 	{"ss", cmd_savestate, "save a state", "save the state with the given NUMber. they are numbered with the digits from 0 to 9", "NUM"},
 	{"ss", cmd_loadstate, "load a state", "load the state with the given NUMber. they are numbered with the digits from 0 to 9", "NUM"},
 	{"reset", cmd_reset, "reset the CPU", "reset the CPU. this will return it to the initial state of the last time you've loaded a ROM, or if you haven't to when you first opened the emulator", ""},
-	help_msg_separator
+	help_msg_separator,
 
 	{"load", cmd_load, "load a binary file to RAM"},
-	help_msg_separator
+	help_msg_separator,
 
 	{"cls", cmd_cls, "clear the console", "", ""},
 	{"update", cmd_update, "force a screen update", "manually update the display. this will not influence the normal screen update cycle", ""},
-	help_msg_separator
+	help_msg_separator,
 
 	{"run", cmd_run, "exit the debugger and run until the next breakpoint", "", ""},
 };
 debugger_command_t GetDebuggerCommand(string name) {
 
 	foreach (command, commands) {
-		//TODO: make aliases work
-		// while (command.parent_command != NULL) {
-		// 	command = *command.parent_command;
-		// }
-
 		if (command.name == name) {
 			return command;
 		}
@@ -213,11 +208,11 @@ void Debugger::DebugInit(CPU_T* CPU) {
 			MAX_CMD_LEN = currentlen;
 	}
 
-	//if the folder doesn't exist, create it
-	namespace fs = std::filesystem;
-	if (!fs::is_directory("saveStates") || !fs::exists("saveStates")) {
-		fs::create_directory("saveStates");
-	}
+	// //if the folder doesn't exist, create it
+	// namespace fs = std::filesystem;
+	// if (!fs::is_directory("saveStates") || !fs::exists("saveStates")) {
+	// 	fs::create_directory("saveStates");
+	// }
 
 	//save state to be used in the reset command
 	SaveState(CPU, -1);
@@ -537,7 +532,7 @@ debugger_func(cmd_help) {
 		cout << "\n\n"
 
 			// TODO: "step-like" is not really intuitive as a description
-			<< "pressing enter will repeat the last step-like instruction" << "\n"
+			<< "pressing enter will repeat the last execution control command" << "\n"
 			<< "press esc while running to start debugging" << "\n\n"
 
 			<< "commands:" << "\n";
