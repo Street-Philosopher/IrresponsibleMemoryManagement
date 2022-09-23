@@ -28,12 +28,17 @@ To access the debugger press ESC in the window. It will halt execution, and will
 
 You can single step by pressing enter without writing any command. Otherwise the commands are:
 * help: lists all commands
+* quit/exit: exits the application
+* shell CMD: executes CMD in the host shell
+
+* cc: displays a counter. this counter is increased every CPU cycle. can be reset with "cc reset"
+
 * cls: clears the console screen
 * update: forces a display update
 * step: single steps to the next instruction (can also be written as simply "s"). After executing this, stepping by pressing enter will repeat this instruction.
 * next: like step, but it will skip over function calls (can be written as "n"). After executing this, stepping by pressing enter will repeat this instruction.
 * finish: will run until the program exits the current function (shortened as "f")
-* cc: displays a counter. this counter is increased every CPU cycle. can be reset with "cc reset"
+
 * m ADDR: view the memory at the given address. if the parameter "v" is put before the address it will be read from VRAM, if the parameter "c" it will be read from CRAM and if none it will be read from normal RAM. it also supports a range of addresses, if written in the form "ADDR1-ADDR2"
 * dis ADDR: reads the memory value at addr, disassembling it into an instruction. only supports normal RAM
 * w ADDR VAL: writes VAL to the given address ADDR. it also supports the "v" and "c" parameters, in the same position as before
