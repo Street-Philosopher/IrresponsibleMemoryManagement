@@ -126,7 +126,11 @@ bool GetBit(int value, int bitNumber) {
 
 //REGION opcodes
 //syscodes
-void nop () {  }
+void nop () { asm("nop"); }
+
+void stop() {
+	throw BreakpointException();
+}
 
 void push(uint16_t reg) {
 	//push the two 8b components
@@ -374,6 +378,10 @@ void ldv(byte* reg, word addr) {
 #undef PC
 
 
+void CPU_T::SetActiveExceptionType(byte code) {
+	cramBase[EXCEPTION_TYPE_REGISTER] = code;
+}
+
 void CPU_T::ExceptionHandler() {
 
 	switch (cramBase[EXCEPTION_MODE_REGISTER]) {
@@ -393,7 +401,8 @@ void CPU_T::ExceptionHandler() {
 			break;
 		default:
 		case EXCEPTION_MODE_STOP:
-			throw BreakpointException();
+			stop();
+			break;
 	}
 }
 
@@ -425,7 +434,7 @@ void CPU_T::exec(byte opcode) {
 				nop();
 				break;
 			case 0b00000001:					//stop
-				throw BreakpointException();	//will open the debugger
+				stop();	//will open the debugger
 				break;
 			case 0b00000010:					//halt
 				//does nothing until you update the screen
@@ -836,6 +845,7 @@ void CPU_T::exec(byte opcode) {
 			
 			//bad
 			default:
+				SetActiveExceptionType(EXCEPTION_TYPE_BAD_OP);
 				ExceptionHandler();
 				break;
 		}

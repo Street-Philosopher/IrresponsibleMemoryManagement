@@ -77,8 +77,9 @@ void CPU_T::init() {
 	cramBase[CLOCK_COUNTER_LOW]  = 0;
 	cramBase[CLOCK_COUNTER_HIGH] = 0;
 
-	//exception handling mode
+	//exception stuff
 	cramBase[EXCEPTION_MODE_REGISTER] = EXCEPTION_MODE_STOP;
+	cramBase[EXCEPTION_TYPE_REGISTER] = EXCEPTION_TYPE_NONE;
 
 	A  = rand() % 256;
 	B  = rand() % 256;

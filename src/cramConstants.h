@@ -18,6 +18,11 @@
 #define EXC_HANDLE_LOW				0x11
 #define EXC_HANDLE_HIGH				0x12
 
+// code for the last exception that was triggered
+#define EXCEPTION_TYPE_REGISTER		0x13
+#define EXCEPTION_TYPE_NONE			0x00
+#define EXCEPTION_TYPE_BAD_OP		0x01
+
 //each bit indicates whether a certain button is pressed or not
 // bit 0:	Right Arrow
 // bit 1:	Left Arrow

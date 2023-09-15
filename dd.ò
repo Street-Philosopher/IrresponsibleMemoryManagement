@@ -33,8 +33,43 @@ conditions:
 display:
 256x256
 64kB VRAM
-0x0000-0x2000: screen data (one bit per pixel, with gb-like "squares")
-updated every 65536 clock cycles
+
+0x0000-0x4000: background data:
+	two bits per pixel
+	first bit is in the top left corner, second bit is to its right and so on
+	after the eighth bit you go down one line and go back to the leftmost pixel of that line
+	after eight lines, you go back up and move eight pixels to the right
+	this way every eight bytes form an 8x8 square: repeat for 32x32 squares and you've filled the whole screen
+
+0x4000-0x5000: sprite data
+	64 small (8x8) sprites:
+		1 byte for settings (0: visible, 1: position mode)
+		16 bytes for image (2 bits per pixel, as explained above but for one square only)
+		4 bytes for position (2x, 2y)
+		total: 21 bytes per sprite
+	64 large (16x16) sprites:
+		1 byte for settings (0: visible, 1: position mode)
+		64 bytes for image (4 small sprites)
+		4 bytes for position (2x, 2y)
+		total: 69 bytes per sprite
+	64 rectangle sprites:
+		1 byte for settings (0: visible, 1: position mode, 2-3: colour)
+		1 byte for width
+		1 byte for height
+		4 bytes for position (2x, 2y)
+		total: 7 bytes per sprite
+	total: 0xFA0 bytes for sprites
+if the visible bit is not set, the sprite will not be rendered
+the position is calculated as following:
+	if the position mode bit is set both position bytes are used for global coordinates
+	if the bit is not set, then only the second byte will be used and position will be relative to the screen
+
+screen is updated every 65536 clock cycles
+render order (bottom to top):
+	background
+	large sprites
+	small sprites
+	rectangle sprites
 # TODO: turn the display to sprite-based, maybe colours but idk
 
 
@@ -46,6 +81,7 @@ accessed using ldh instruction
 10: exception handle mode
 11: \__ exception handler address (little endian)
 12: /
+13: type of last exception that was triggered
 80: input (one bit per key)
 F0: cycle counter (low)		\__ when this reaches 0000 the screen updates
 F1: cycle coutner (high)	/
@@ -53,10 +89,10 @@ F1: cycle coutner (high)	/
 
 exceptions:
 errors caused by:
-    + invalid opcode
+    + invalid opcode (code 0x01)
 when one occurs, it is handled depending on the value of the exception handle mode register in CRAM (addr 0x10):
-    + halt (0x01, the default) will stop the CPU
     + ignore (0x00) will skip the exception as if it didn't occur
+    + halt (0x01, the default) will stop the CPU
     + handle (0x02) will perform some operations before jumping to the address in the exception handler register (0x11-0x12)
 the handler will (in order):
     + set the exception mode to halt, so the user will have to reset it before jumping back

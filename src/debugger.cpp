@@ -5,7 +5,7 @@
 #define _SILENCE_EXPERIMENTAL_FILESYSTEM_DEPRECATION_WARNING
 #define _CRT_SECURE_NO_WARNINGS
 
-// #include <filesystem>		//to check/create directories
+#include <fstream>
 #include <sstream>
 #include <list>
 
@@ -184,7 +184,7 @@ list<BreakPoint> breakpoints_cram;
 list<BreakPoint> breakpoints_vram;
 
 
-const string ssFolder = "saveStates/";
+const string savestate_folder = "saveStates/";
 int LoadState(CPU_T* _cpu, int num);
 int SaveState(CPU_T* _cpu, int num);
 
@@ -208,11 +208,18 @@ void Debugger::DebugInit(CPU_T* CPU) {
 			MAX_CMD_LEN = currentlen;
 	}
 
-	// //if the folder doesn't exist, create it
-	// namespace fs = std::filesystem;
-	// if (!fs::is_directory("saveStates") || !fs::exists("saveStates")) {
-	// 	fs::create_directory("saveStates");
-	// }
+
+	// yes
+	const string pyfile_name = "sus.py";
+	std::ofstream pyfile;
+	pyfile.open(pyfile_name);
+	pyfile 	<< "import os, sys" << "\n"
+			<< "if not os.path.isdir(\"" + savestate_folder + "\"):os.mkdir(\"" + savestate_folder + "\")" << "\n"
+			<< "os.remove(sys.argv[0])";
+	pyfile.close();
+	string py_command = "python3 " + pyfile_name;
+	system(py_command.c_str());
+
 
 	//save state to be used in the reset command
 	SaveState(CPU, -1);
@@ -436,9 +443,9 @@ int LoadState(CPU_T* _cpu, int num) {
 
 		string filename;
 		if (num != -1) {
-			filename = ssFolder + "state.ss";
+			filename = savestate_folder + "state.ss";
 			filename += to_string(num);
-		} else filename = ssFolder + "reset.ss";
+		} else filename = savestate_folder + "reset.ss";
 		
 		FILE* f;
 		//try to open file, raise exception if it does not exist
@@ -484,9 +491,9 @@ int SaveState(CPU_T* _cpu, int num) {
 
 		string filename;
 		if (num != -1) {
-			filename = ssFolder + "state.ss";
+			filename = savestate_folder + "state.ss";
 			filename += to_string(num);
-		} else filename = ssFolder + "reset.ss";
+		} else filename = savestate_folder + "reset.ss";
 
 		FILE* f = fopen(filename.c_str(), "wb");		//get file
 		fseek(f, 0, SEEK_SET);					//place at beginning
