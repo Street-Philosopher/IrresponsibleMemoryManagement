@@ -4,19 +4,19 @@
 
 #define PLAYER_HEIGHT as 48
 
-#define PLAYER_Y_MAX as 206
-#define PLAYER_Y_MIN as  24
+#define PLAYER_Y_MAX as 214
+#define PLAYER_Y_MIN as  16
 
-#define PLAYER_SPEED as 8			; pixels per cycle
+#define PLAYER_SPEED as 7			; pixels per cycle
 
-#define BALL_P1_CONTACT as  24
+#define BALL_P1_CONTACT as  16
 #define BALL_P2_CONTACT as 232
 #define BALL_Y_MAX as 240
 #define BALL_Y_MIN as  8
-#define SCORED_TO_P1 as 16
+#define SCORED_TO_P1 as 8
 #define SCORED_TO_P2 as 240
 #define BALL_START_YPOS as 124
-#define BALL_RESTART_POS_P1 as 24
+#define BALL_RESTART_POS_P1 as 16
 #define BALL_RESTART_POS_P2 as 232
 
 #define BALL_SPEED as 8			; pixels per cycle
